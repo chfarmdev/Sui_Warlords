@@ -1,0 +1,15 @@
+[package]
+name = "sui_warlords"
+edition = "2024.alpha"
+
+[dependencies]
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/devnet" }
+MoveStdlib = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/move-stdlib", rev = "framework/devnet" }
+
+[addresses]
+sui_warlords = "0x0"
+std = "0x1"
+sui = "0x2"
+adminpayout = "0xd0fcd1229aeacff428f39a109d7d71044ff5b0f6a84ab0ac3c73762865a91964"
+gameadmin = "0x7075239418bf3707dd6019314514b2bd6fac7d63ff678acaf3e2a41b1551bd7a"
+supra = "0xe51f3a1a07c81e15a9d6ce9b871d24df7690765c"
