@@ -6,7 +6,7 @@ module sui_warlords::counter  {
     use sui::tx_context::TxContext;
     use sui::transfer;
 
-    public struct Counter<phantom T> has key, store {
+    struct Counter<phantom T> has key, store {
         id: UID,
         value: u256
     }

@@ -10,20 +10,17 @@ module sui_warlords::warlord_mint {
     use sui::sui::SUI;
     use sui::pay;    
     //RNG Logic
-    use sui_warlords::rand;
-    // Supra RNG Logic
-    use sui_warlords::supra_contract::{Self, DkgState, Config};
-    use sui::vec_map::{Self, VecMap};
-    
+    use sui_warlords::rand;  
+        
     // Hero NFT, mintable for 5 SUI
-    public struct SuiWarlordNFT has key, store {
+    struct SuiWarlordNFT has key, store {
         id: UID,
         // Name for the Hero
         name: string::String,
         // Description of the Hero
         description: string::String,
         // Class of the Warlord
-        class: u64,
+        class: String,
         //Level of the Warlord
         level: u64,
         // URL for the Hero
@@ -37,11 +34,11 @@ module sui_warlords::warlord_mint {
         wisdom: u64,
         vitality: u64,
         luck: u64,
-    }    
-    
+    }
+   
     // ===== Events =====
 
-    public struct SuiWarlordMinted has copy, drop {
+    struct SuiWarlordMinted has copy, drop {
         // The Object ID of the Warlord
         object_id: ID,
         // The creator of the warlord
@@ -51,7 +48,7 @@ module sui_warlords::warlord_mint {
         // The description of the Warlord (User defined)
         description: string::String,
         // Class of the Warlord
-        class: u64,
+        class: string::String,
         //Level of the Warlord
         level: u64,
         // URL of the Warlord
@@ -69,76 +66,74 @@ module sui_warlords::warlord_mint {
 
     // ===== Public view functions =====
 
-    // Get the Heroes `Name`
-    public fun name(nft: &SuiWarlordNFT): &string::String {
-        &nft.name
+    // Get the Heroes Name
+    public fun get_name(nft: &SuiWarlordNFT): string::String {
+        nft.name
     }
 
-    // Get the Heroes `Description`
-    public fun description(nft: &SuiWarlordNFT): &string::String {
-        &nft.description
+    // Get the Heroes Description
+    public fun get_description(nft: &SuiWarlordNFT): string::String {
+        nft.description
     }
 
-    // Get the Heroes `Class'. Numerically encoded because strings suck.
-    public fun class(nft: &SuiWarlordNFT): u64 {
+    // Get the Heroes Class 
+    public fun get_class(nft: &SuiWarlordNFT): string::String {
         nft.class
     }
 
-    // Get the Heroes `Level'. Starts at 1, max at 10, then class mutation.
-    public fun level(nft: &SuiWarlordNFT): u64 {
+    // Get the Heroes Level. Starts at 1, max at 10, then class mutation.
+    public fun get_level(nft: &SuiWarlordNFT): u64 {
         nft.level
     }
 
-    // Get the Heroes `Url`
-    //public fun url(nft: &SuiWarlordNFT): Url {
-    //   nft.url()
-    //}
+    // Get the Heroes Url
+    public fun url(nft: &SuiWarlordNFT): Url {
+       nft.url
+    }
 
-    // Get the Heroes `Strength'
-    public fun strength(nft: &SuiWarlordNFT): u64 {
+    // Get the Heroes Strength
+    public fun get_strength(nft: &SuiWarlordNFT): u64 {
         nft.strength
     }
  
     // Get the Heroes `Endurance'
-    public fun endurance(nft: &SuiWarlordNFT): u64 {
+    public fun get_endurance(nft: &SuiWarlordNFT): u64 {
         nft.endurance
     }
 
     // Get the Heroes `Dexterity'
-    public fun dexterity(nft: &SuiWarlordNFT): u64 {
+    public fun get_dexterity(nft: &SuiWarlordNFT): u64 {
         nft.dexterity
     }
 
     // Get the Heroes `Agility'
-    public fun agility(nft: &SuiWarlordNFT): u64 {
+    public fun get_agility(nft: &SuiWarlordNFT): u64 {
         nft.agility
     }
 
     // Get the Heroes `Intelligence'
-    public fun intelligence(nft: &SuiWarlordNFT): u64 {
+    public fun get_intelligence(nft: &SuiWarlordNFT): u64 {
         nft.intelligence
     }
 
     // Get the Heroes `Wisdom'
-    public fun wisdom(nft: &SuiWarlordNFT): u64 {
+    public fun get_wisdom(nft: &SuiWarlordNFT): u64 {
         nft.wisdom
     }
 
     // Get the Heroes `Vitality'
-    public fun vitality(nft: &SuiWarlordNFT): u64 {
+    public fun get_vitality(nft: &SuiWarlordNFT): u64 {
         nft.vitality
     }
 
     // Get the Heroes `Luck'
-    public fun luck(nft: &SuiWarlordNFT): u64 {
+    public fun get_luck(nft: &SuiWarlordNFT): u64 {
         nft.luck
     }
       
     const MIN_STAT: u64 = 1;
     const MAX_STAT: u64 = 32;
     const INITIAL_LEVEL: u64 = 1;
-    const MIN_CLASS: u64 = 1;
-    const MAX_CLASS: u64 = 8;
     const ADMIN_PAYOUT_ADDRESS: address = @adminpayout;
     const WARLORD_MINT_COST: u64 = 5000000000;
 
@@ -148,12 +143,12 @@ module sui_warlords::warlord_mint {
 
     
     // Create a new Sui Warlords NFT. Name, description, URL, and address for payment are required arguments
-    public entry fun mint_warlord_to_sender(
+    public fun mint_warlord_to_sender(
         name: vector<u8>,
         description: vector<u8>,
         url: vector<u8>,
-        mut payment: Coin<SUI>,
-        ctx: &mut TxContext
+        payment: Coin<SUI>,
+        ctx: &mut TxContext,
     ) {
         let sender = tx_context::sender(ctx);
         let value = coin::value(&payment);
@@ -172,7 +167,7 @@ module sui_warlords::warlord_mint {
             id: object::new(ctx),
             name: string::utf8(name),
             description: string::utf8(description),
-            class: rand::rng(MIN_CLASS, MAX_CLASS, ctx),
+            class: string::utf8(b"Recruit"),
             level: INITIAL_LEVEL,
             url: url::new_unsafe_from_bytes(url),
             strength: rand::rng(MIN_STAT, MAX_STAT, ctx),
@@ -206,43 +201,73 @@ module sui_warlords::warlord_mint {
         transfer::public_transfer(nft, sender);
     }
 
-    // Transfer 'Warlord NFT' to `recipient`
+    // Transfer Warlord NFT to recipient
      public fun warlord_transfer(nft: SuiWarlordNFT, recipient: address) {
         transfer::public_transfer(nft, recipient)
     }
 
-    // Update the `description` of `Warlord` to `new_description`
+    // Update the name of Warlord to new_name
+    public fun warlord_update_name(nft: &mut SuiWarlordNFT, new_name: vector<u8>, _: &mut TxContext) {
+        nft.name = string::utf8(new_name)
+    }
+
+    // Update the description of Warlord to new_description
     public fun warlord_update_description(nft: &mut SuiWarlordNFT, new_description: vector<u8>, _: &mut TxContext) {
         nft.description = string::utf8(new_description)
     }
 
-    // Permanently delete `Warlord`
+    // Permanently delete Warlord
     public fun warlord_burn(nft: SuiWarlordNFT, _: &mut TxContext) {
         let SuiWarlordNFT { id, name: _, description: _, class: _, level: _, url: _, strength: _, endurance: _, dexterity: _, agility: _, intelligence: _, wisdom: _, vitality: _, luck: _} = nft;
         object::delete(id)
     }
 
+    // Level up section, costs 2 SUI, and 1-9 BLOOD depending on desired bonus stats. Allows up to 9 level ups for a max level of 10.
+    // Will later create a secondary function that allows leveling with ingame tokens as opposed to SUI.
+
     const BASECLASS_LVLUP_MIN: u64 = 1;
     const BASECLASS_LVLUP_MAX: u64 = 8;
     const WARLORD_LEVEL_UP_COST: u64 = 2000000000;
-    const WARLORD_IS_MAX_LEVEL: u64 = 10;
+    const WARLORD_IS_MAX_LEVEL: u64 = 2;
+    const WARLORD_LEVEL_UP_COST_BLOOD: u64 = 1000000000;
+    const TOO_MUCH_BLOOD_FOR_LEVEL_UP: u64 = 3;
     
-    public entry fun level_up_warlord(
+    public fun level_up_warlord(
         warlord: &mut SuiWarlordNFT,
-        mut payment: Coin<SUI>,
+        payment: Coin<SUI>,
+        payment2: Coin<sui_warlords::blood::BLOOD>,
+        blood_quantity: u64,
         ctx: &mut TxContext,
         ) {
         let sender = tx_context::sender(ctx);
         let value = coin::value(&payment);
+        let value2 = coin::value(&payment2);
         
-        //Check users balance and throw error if too low
+        //Check users balance and throw error if not enough SUI or BLOOD
         assert!(value >= WARLORD_LEVEL_UP_COST, E_INSUFFICIENT_PAYMENT);
+        assert!(value2 >= WARLORD_LEVEL_UP_COST_BLOOD, E_INSUFFICIENT_PAYMENT);
         
         // Split and send the mint cost to admin address        
         pay::split_and_transfer(&mut payment, WARLORD_LEVEL_UP_COST, ADMIN_PAYOUT_ADDRESS, ctx);
         
-        // Transfer the remainder back to the user/sender
+        // Transfer the SUI remainder back to the user/sender
         transfer::public_transfer(payment, sender);
+        
+        // Check BLOOD sent, if over 9, set to 9 which is max.
+        if (blood_quantity >=9 ) {
+            blood_quantity = 9;        
+        };
+        
+        //Trasnfer BLOOD to admin, and return remainder to sender
+        pay::split_and_transfer(&mut payment2, blood_quantity, ADMIN_PAYOUT_ADDRESS, ctx);
+        transfer::public_transfer(payment2, sender);
+        
+        // Calculate the bloodbonus based on blood_quantity. Capped at max roll per level up. Which is 8 for recruit
+    
+        let bloodbonus: u64 = (blood_quantity - WARLORD_LEVEL_UP_COST_BLOOD) / WARLORD_LEVEL_UP_COST_BLOOD;
+        if (bloodbonus > BASECLASS_LVLUP_MAX) {
+            abort TOO_MUCH_BLOOD_FOR_LEVEL_UP
+        };
 
         // Abort if warlord is level 10, otherwise allow level up.
         if (warlord.level == 10) {
@@ -250,64 +275,40 @@ module sui_warlords::warlord_mint {
         }
         else {     
             warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));            
-        }       
-    }
-
-    // Supra VRF drop in code below
-    // Make struct public
-    // Supra module can't be capital, otherwise it shows up as variable, not module
-
-    public struct RandomNumberList has key {
-        id: UID,
-        random_numbers: VecMap<u64, vector<u64>>
-    }
-
-    fun init(ctx: &mut TxContext) {
-        let random_numbers: RandomNumberList = RandomNumberList {
-            id: object::new(ctx),
-            random_numbers: vec_map::empty(),
-        };
-        transfer::share_object(random_numbers);
-    }
-
-    public entry fun rng_request(random_number_list: &mut RandomNumberList, client_address: address, supra_config: &mut Config, rng_count: u8, client_seed: u64, ctx: &mut TxContext) {
-        let callback_fn: String = string::utf8(b"ExampleContract::distribute");
-        let num_confirmations: u64 = 1;
-        let client_obj_addr: address = object::uid_to_address(&random_number_list.id);
-        supra_contract::rng_request(supra_config, client_address, callback_fn, rng_count, client_seed, num_confirmations, client_obj_addr, ctx);
-    }
-
-    public entry fun distribute(
-        random_number_list: &mut RandomNumberList,
-        dkg_state: &mut DkgState,
-        nonce: u64,
-        message: vector<u8>,
-        signature: vector<u8>,
-        rng_count: u8,
-        client_seed: u64,
-        ctx: &mut TxContext
-    ) {
-        let verified_num: vector<u64> = supra_contract::verify_callback(dkg_state, nonce, message, signature, rng_count, client_seed, ctx);
-
-        if(!vec_map::contains(&random_number_list.random_numbers, &nonce)) {
-            vec_map::insert(&mut random_number_list.random_numbers, nonce, verified_num);
+            warlord.strength = warlord.strength + bloodbonus + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
+            warlord.endurance = warlord.endurance + bloodbonus + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
+            warlord.dexterity = warlord.dexterity + bloodbonus + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
+            warlord.agility = warlord.agility + bloodbonus  +  (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
+            warlord.intelligence = warlord.intelligence + bloodbonus +  (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
+            warlord.wisdom = warlord.wisdom + bloodbonus + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
+            warlord.vitality = warlord.vitality + bloodbonus + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
+            warlord.luck = warlord.luck + bloodbonus + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));            
         }
     }
+
+    // Class change section
+    // BLOOD and TIME need to be added as costs
+
+    const WARLORD_CLASS_CHANGE_COST: u64 = 10000000000;
+    
+    public fun class_change_warlord(
+        warlord: &mut SuiWarlordNFT,
+        payment: Coin<SUI>,
+        newclass: string::String,
+        ctx: &mut TxContext,
+        ) {
+        let sender = tx_context::sender(ctx);
+        let value = coin::value(&payment);
+        
+        //Check users balance and throw error if too low
+        assert!(value >= WARLORD_CLASS_CHANGE_COST, E_INSUFFICIENT_PAYMENT);
+        
+        // Split and send the mint cost to admin address        
+        pay::split_and_transfer(&mut payment, WARLORD_CLASS_CHANGE_COST, ADMIN_PAYOUT_ADDRESS, ctx);
+        
+        // Transfer the remainder back to the user/sender
+        transfer::public_transfer(payment, sender);   
+        
+        warlord.class = newclass;
+    }   
 }
-
-
-
-
-
-
-
-
-
