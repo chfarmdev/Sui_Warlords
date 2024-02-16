@@ -72,7 +72,7 @@ module sui_warlords::rand {
 
     // generates seed using the tx context (epoch, sender and a newly created uid) and clock 
     public fun seed_with_clock(clock: &Clock, ctx: &mut TxContext): vector<u8> {
-        let raw_seed = raw_seed(ctx);
+        let mut raw_seed = raw_seed(ctx);
 
         let timestamp_bytes = bcs::to_bytes(&clock::timestamp_ms(clock));
         vector::append(&mut raw_seed, timestamp_bytes);
@@ -82,7 +82,7 @@ module sui_warlords::rand {
 
     // generates seed using the tx context (epoch, sender and a newly created uid) and a counter 
     public fun seed_with_counter<T>(w: &T, counter: &mut Counter<T>, ctx: &mut TxContext): vector<u8> {
-        let raw_seed = raw_seed(ctx);
+        let mut raw_seed = raw_seed(ctx);
 
         let counter_bytes = bcs::to_bytes(&counter::increment(counter, w));
         vector::append(&mut raw_seed, counter_bytes);
@@ -92,7 +92,7 @@ module sui_warlords::rand {
 
     // generates seed using the tx context (epoch, sender and a newly created uid) and clock 
     public fun seed_with_clock_and_counter<T>(w: &T, clock: &Clock, counter: &mut Counter<T>, ctx: &mut TxContext): vector<u8> {
-        let raw_seed = raw_seed(ctx);
+        let mut raw_seed = raw_seed(ctx);
 
         let timestamp_bytes = bcs::to_bytes(&clock::timestamp_ms(clock));
         let counter_bytes = bcs::to_bytes(&counter::increment(counter, w));
@@ -120,7 +120,7 @@ module sui_warlords::rand {
         let id_bytes = object::uid_to_bytes(&id);
         object::delete(id);
 
-        let raw_seed = vector::empty<u8>();
+        let mut raw_seed = vector::empty<u8>();
         vector::append(&mut raw_seed, id_bytes);
         vector::append(&mut raw_seed, epoch_bytes);
         vector::append(&mut raw_seed, sender_bytes);

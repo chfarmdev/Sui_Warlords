@@ -8,12 +8,16 @@ module sui_warlords::warlord_mint {
     use sui::tx_context::{Self, TxContext};
     use sui::coin::{Self, Coin};
     use sui::sui::SUI;
-    use sui::pay;    
+    use sui::pay;
+    use sui::clock::{Clock};    
     //RNG Logic
-    use sui_warlords::rand;  
-        
+    use sui_warlords::rand;
+    use sui_warlords::reservoir::{Account};
+    use sui_warlords::blood::{BLOOD};
+    use sui_warlords::time::{TIME};
+
     // Hero NFT, mintable for 5 SUI
-    struct SuiWarlordNFT has key, store {
+    public struct SuiWarlordNFT has key, store {
         id: UID,
         // Name for the Hero
         name: string::String,
@@ -25,6 +29,11 @@ module sui_warlords::warlord_mint {
         level: u64,
         // URL for the Hero
         url: Url,
+        // Timestamp for creation of the NFT
+        createtime: u64,
+        // Counters for tracking claimed BLOOD & TIME
+        claimedblood: u64,
+        claimedtime: u64,
         // Attributes and stats of the Hero
         strength: u64,
         endurance: u64,
@@ -38,11 +47,11 @@ module sui_warlords::warlord_mint {
    
     // ===== Events =====
 
-    struct SuiWarlordMinted has copy, drop {
+    public struct SuiWarlordMinted has copy, drop {
         // The Object ID of the Warlord
         object_id: ID,
         // The creator of the warlord
-        creator: address,
+        creator: address,        
         // The name of the Warlord (User defined)
         name: string::String,
         // The description of the Warlord (User defined)
@@ -87,9 +96,24 @@ module sui_warlords::warlord_mint {
     }
 
     // Get the Heroes Url
-    public fun url(nft: &SuiWarlordNFT): Url {
-       nft.url
+    //public fun url(nft: &SuiWarlordNFT): Url {
+    //   nft.url
+    //}
+
+    // Get the Heroes Creation Time
+    public fun get_createtime(nft: &SuiWarlordNFT): u64 {
+        nft.createtime
     }
+
+    // Get the Heroes Claimed BLOOD
+    public fun get_claimedblood(nft: &SuiWarlordNFT): u64 {
+        nft.claimedblood
+    }
+
+    // Get the Heroes Claimed TIME
+    public fun get_claimedtime(nft: &SuiWarlordNFT): u64 {
+        nft.claimedtime
+    }    
 
     // Get the Heroes Strength
     public fun get_strength(nft: &SuiWarlordNFT): u64 {
@@ -136,18 +160,17 @@ module sui_warlords::warlord_mint {
     const INITIAL_LEVEL: u64 = 1;
     const ADMIN_PAYOUT_ADDRESS: address = @adminpayout;
     const WARLORD_MINT_COST: u64 = 5000000000;
+    const ZERO: u64 = 0;
 
     const E_INSUFFICIENT_PAYMENT: u64 = 0;
-    
-    // ===== Entrypoints =====   
-
-    
+       
     // Create a new Sui Warlords NFT. Name, description, URL, and address for payment are required arguments
     public fun mint_warlord_to_sender(
         name: vector<u8>,
         description: vector<u8>,
         url: vector<u8>,
-        payment: Coin<SUI>,
+        mut payment: Coin<SUI>,
+        clock: &Clock,
         ctx: &mut TxContext,
     ) {
         let sender = tx_context::sender(ctx);
@@ -170,6 +193,9 @@ module sui_warlords::warlord_mint {
             class: string::utf8(b"Recruit"),
             level: INITIAL_LEVEL,
             url: url::new_unsafe_from_bytes(url),
+            createtime: sui::clock::timestamp_ms(clock),
+            claimedblood: ZERO,
+            claimedtime: ZERO,
             strength: rand::rng(MIN_STAT, MAX_STAT, ctx),
             endurance: rand::rng(MIN_STAT, MAX_STAT, ctx),
             dexterity: rand::rng(MIN_STAT, MAX_STAT, ctx),
@@ -216,10 +242,47 @@ module sui_warlords::warlord_mint {
         nft.description = string::utf8(new_description)
     }
 
-    // Permanently delete Warlord
-    public fun warlord_burn(nft: SuiWarlordNFT, _: &mut TxContext) {
-        let SuiWarlordNFT { id, name: _, description: _, class: _, level: _, url: _, strength: _, endurance: _, dexterity: _, agility: _, intelligence: _, wisdom: _, vitality: _, luck: _} = nft;
-        object::delete(id)
+    // Permanently delete Warlord & reward 5 BLOOD
+    const BLOOD_FOR_BURN: u64 = 5;
+    
+    public fun warlord_burn(nft: SuiWarlordNFT, accobj: &mut Account, ctx: &mut TxContext) {
+        let SuiWarlordNFT { id, name: _, description: _, class: _, level: _, url: _,createtime: _, claimedblood: _, claimedtime: _, strength: _, endurance: _, dexterity: _, agility: _, intelligence: _, wisdom: _, vitality: _, luck: _} = nft;
+        object::delete(id);
+        
+        //Return blood to burner
+        let amount = BLOOD_FOR_BURN;
+        let recipient = tx_context::sender(ctx);        
+        let bloodpayout: Coin<BLOOD> = sui_warlords::reservoir::withdraw(accobj, amount, ctx);
+        transfer::public_transfer(bloodpayout, recipient);                
+    }
+    
+    // Claim BLOOD & TIME. NFT should emit 1 BLOOD & 1 TIME per day
+    const DAY_IN_MS: u64 = 86400000;
+    
+    const ONE: u64 = 1;
+    const E_INSUFFICIENT_CLAIM_WAIT_24_HOURS: u64 = 1;
+        
+    public fun warlord_claim_emission(nft: &mut SuiWarlordNFT, accobj: &mut Account, clock: &Clock, ctx: &mut TxContext) {
+        // Establish sender as recipient of payout
+        // Establish current time in ms
+        let recipient = tx_context::sender(ctx);  
+        let currenttime = sui::clock::timestamp_ms(clock);
+        
+        // Calculate both BLOOD & TIME payout based on current time vs claimed BLOOD & TIME
+        let bloodamount = ((currenttime - nft.createtime) / DAY_IN_MS ) - nft.claimedblood;
+        assert!(bloodamount > ONE, E_INSUFFICIENT_CLAIM_WAIT_24_HOURS);
+        let timeamount = ((currenttime - nft.createtime) / DAY_IN_MS) - nft.claimedtime;
+        assert!(timeamount > ONE, E_INSUFFICIENT_CLAIM_WAIT_24_HOURS);
+
+        // Payout the BLOOD to user and increment the claimedblood counter
+        let bloodpayout: Coin<BLOOD> = sui_warlords::reservoir::withdraw(accobj, bloodamount, ctx);
+        transfer::public_transfer(bloodpayout, recipient);
+        nft.claimedblood = nft.claimedblood + bloodamount;
+
+        // Payout the TIME to user and increment the claimedtime counter
+        let timepayout: Coin<TIME> = sui_warlords::reservoir::withdraw(accobj, timeamount, ctx);
+        transfer::public_transfer(timepayout, recipient);
+        nft.claimedtime = nft.claimedtime + timeamount;
     }
 
     // Level up section, costs 2 SUI, and 1-9 BLOOD depending on desired bonus stats. Allows up to 9 level ups for a max level of 10.
@@ -229,14 +292,14 @@ module sui_warlords::warlord_mint {
     const BASECLASS_LVLUP_MAX: u64 = 8;
     const WARLORD_LEVEL_UP_COST: u64 = 2000000000;
     const WARLORD_IS_MAX_LEVEL: u64 = 2;
-    const WARLORD_LEVEL_UP_COST_BLOOD: u64 = 1000000000;
+    const WARLORD_LEVEL_UP_COST_BLOOD: u64 = 1;
     const TOO_MUCH_BLOOD_FOR_LEVEL_UP: u64 = 3;
     
     public fun level_up_warlord(
         warlord: &mut SuiWarlordNFT,
-        payment: Coin<SUI>,
-        payment2: Coin<sui_warlords::blood::BLOOD>,
-        blood_quantity: u64,
+        mut payment: Coin<SUI>,
+        mut payment2: Coin<sui_warlords::blood::BLOOD>,
+        mut blood_quantity: u64,
         ctx: &mut TxContext,
         ) {
         let sender = tx_context::sender(ctx);
@@ -269,8 +332,8 @@ module sui_warlords::warlord_mint {
             abort TOO_MUCH_BLOOD_FOR_LEVEL_UP
         };
 
-        // Abort if warlord is level 10, otherwise allow level up.
-        if (warlord.level == 10) {
+        // Abort if warlord is level 10 or above, otherwise allow level up. Will have a different level up function for 10-20 and 20-30
+        if (warlord.level >= 10) {
             abort WARLORD_IS_MAX_LEVEL
         }
         else {     
@@ -293,7 +356,7 @@ module sui_warlords::warlord_mint {
     
     public fun class_change_warlord(
         warlord: &mut SuiWarlordNFT,
-        payment: Coin<SUI>,
+        mut payment: Coin<SUI>,
         newclass: string::String,
         ctx: &mut TxContext,
         ) {

@@ -3,15 +3,13 @@ module sui_warlords::blood {
     use sui::coin::{Self, TreasuryCap};
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
-
-    // `Coin<sui_warlords::blood::BLOOD>`
-    // One time witness
     
-    struct BLOOD has drop {}
+    // `Coin<sui_warlords::time::TIME>`
+    // One time witness
+   
+    public struct BLOOD has drop {}
 
-    struct WrappedBloodCap {wrapped_blood_cap: TreasuryCap<BLOOD>}
-
-    // Create treasury cap and base BLOOD token for SUI Warlords
+    // Create treasury cap and base TIME token for SUI Warlords
     // Syntax is witness, decimals, symbol, name, description, icon_url, ctx
     
     fun init(witness: BLOOD, ctx: &mut TxContext) {
@@ -20,23 +18,13 @@ module sui_warlords::blood {
         transfer::public_transfer(treasury, tx_context::sender(ctx))
     }
 
-    public fun admin_mint_blood(
-        blood_treasury_cap: &mut TreasuryCap<BLOOD>, 
+    public fun mint_blood(
+        treasury_cap: &mut TreasuryCap<BLOOD>, 
         amount: u64, 
         recipient: address, 
         ctx: &mut TxContext,
         ) {
-        let coin = coin::mint(blood_treasury_cap, amount, ctx);
-        transfer::public_transfer(coin, recipient)
-    }
-
-    fun private_mint_blood(
-        blood_cap: &mut TreasuryCap<BLOOD>,
-        amount: u64,
-        recipient: address,
-        ctx: &mut TxContext,
-    ) {
-        let coin = coin::mint(blood_cap, amount, ctx);
+        let coin = coin::mint(treasury_cap, amount, ctx);
         transfer::public_transfer(coin, recipient)
     }
 }
