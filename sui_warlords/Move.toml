@@ -1,9 +1,8 @@
 [package]
 name = "sui_warlords"
 edition = "2024.alpha"
-version = "2.0.0"
-published-at = "0x6622d0df9f1bfd5f5e24b759d572a2df325ddd4ae308bafb93ace029c0dedc8b"
-
+version = "3.0.0"
+published-at = "0x52353a039bc641b54b98a6fac399b7c73347cce8beef1041b867b2a0600b109f"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }

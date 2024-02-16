@@ -7,7 +7,7 @@ module sui_warlords::reservoir {
     use sui::dynamic_field as df;
     use sui::tx_context::TxContext;
 
-    friend sui_warlords::warlord_mint;
+    friend sui_warlords::warlord;
     
     const EBalanceDONE: u64 = 1;
 

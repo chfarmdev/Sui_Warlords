@@ -1,5 +1,5 @@
 #[lint_allow(self_transfer)]
-module sui_warlords::warlord_mint {
+module sui_warlords::warlord {
     use sui::url::{Self, Url};
     use std::string::{Self, String};
     use sui::object::{Self, ID, UID};
@@ -14,7 +14,7 @@ module sui_warlords::warlord_mint {
     use sui_warlords::rand;
     use sui_warlords::reservoir::{Account};
     use sui_warlords::blood::{BLOOD};
-    use sui_warlords::time::{TIME};
+    use sui_warlords::time::{TIME};    
 
     // Hero NFT, mintable for 5 SUI
     public struct SuiWarlordNFT has key, store {
@@ -156,7 +156,7 @@ module sui_warlords::warlord_mint {
     }
       
     const MIN_STAT: u64 = 1;
-    const MAX_STAT: u64 = 32;
+    const MAX_STAT: u64 = 33;
     const INITIAL_LEVEL: u64 = 1;
     const ADMIN_PAYOUT_ADDRESS: address = @adminpayout;
     const WARLORD_MINT_COST: u64 = 5000000000;
@@ -271,6 +271,7 @@ module sui_warlords::warlord_mint {
         // Calculate both BLOOD & TIME payout based on current time vs claimed BLOOD & TIME
         let bloodamount = ((currenttime - nft.createtime) / DAY_IN_MS ) - nft.claimedblood;
         assert!(bloodamount > ONE, E_INSUFFICIENT_CLAIM_WAIT_24_HOURS);
+        
         let timeamount = ((currenttime - nft.createtime) / DAY_IN_MS) - nft.claimedtime;
         assert!(timeamount > ONE, E_INSUFFICIENT_CLAIM_WAIT_24_HOURS);
 
@@ -286,16 +287,17 @@ module sui_warlords::warlord_mint {
     }
 
     // Level up section, costs 2 SUI, and 1-9 BLOOD depending on desired bonus stats. Allows up to 9 level ups for a max level of 10.
-    // Will later create a secondary function that allows leveling with ingame tokens as opposed to SUI.
+    // Will create a secondary function that allows leveling with TIME & BLOOD tokens as opposed to SUI.
 
     const BASECLASS_LVLUP_MIN: u64 = 1;
-    const BASECLASS_LVLUP_MAX: u64 = 8;
+    const BASECLASS_LVLUP_MAX: u64 = 9;
     const WARLORD_LEVEL_UP_COST: u64 = 2000000000;
-    const WARLORD_IS_MAX_LEVEL: u64 = 2;
     const WARLORD_LEVEL_UP_COST_BLOOD: u64 = 1;
-    const TOO_MUCH_BLOOD_FOR_LEVEL_UP: u64 = 3;
     
-    public fun level_up_warlord(
+    const E_WARLORD_IS_MAX_LEVEL: u64 = 2;
+    const E_TOO_MUCH_BLOOD_FOR_LEVEL_UP: u64 = 3;
+    
+    public fun warlord_level_up_sui(
         warlord: &mut SuiWarlordNFT,
         mut payment: Coin<SUI>,
         mut payment2: Coin<sui_warlords::blood::BLOOD>,
@@ -329,12 +331,12 @@ module sui_warlords::warlord_mint {
     
         let bloodbonus: u64 = (blood_quantity - WARLORD_LEVEL_UP_COST_BLOOD) / WARLORD_LEVEL_UP_COST_BLOOD;
         if (bloodbonus > BASECLASS_LVLUP_MAX) {
-            abort TOO_MUCH_BLOOD_FOR_LEVEL_UP
+            abort E_TOO_MUCH_BLOOD_FOR_LEVEL_UP
         };
 
         // Abort if warlord is level 10 or above, otherwise allow level up. Will have a different level up function for 10-20 and 20-30
         if (warlord.level >= 10) {
-            abort WARLORD_IS_MAX_LEVEL
+            abort E_WARLORD_IS_MAX_LEVEL
         }
         else {     
             warlord.level = warlord.level + 1;
@@ -351,10 +353,15 @@ module sui_warlords::warlord_mint {
 
     // Class change section
     // BLOOD and TIME need to be added as costs
+    // Class change only available at level 10, Intended for converting a recruit into a base class archetype
+    // Additional class change routines will be introduced for each archetype into specializations
+    // Similar gating function will be applied so that specializations can only be instantiated at lvl 20
 
     const WARLORD_CLASS_CHANGE_COST: u64 = 10000000000;
+
+    const E_WARLORD_MUST_BE_LEVEL_10_FOR_CLASS_CHANGE: u64 = 4;
     
-    public fun class_change_warlord(
+    public fun warlord_base_class_change(
         warlord: &mut SuiWarlordNFT,
         mut payment: Coin<SUI>,
         newclass: string::String,
@@ -366,12 +373,16 @@ module sui_warlords::warlord_mint {
         //Check users balance and throw error if too low
         assert!(value >= WARLORD_CLASS_CHANGE_COST, E_INSUFFICIENT_PAYMENT);
         
-        // Split and send the mint cost to admin address        
-        pay::split_and_transfer(&mut payment, WARLORD_CLASS_CHANGE_COST, ADMIN_PAYOUT_ADDRESS, ctx);
+        if (warlord.level == 10) {
+
+            // Split and send the mint cost to admin address        
+            pay::split_and_transfer(&mut payment, WARLORD_CLASS_CHANGE_COST, ADMIN_PAYOUT_ADDRESS, ctx);
         
-        // Transfer the remainder back to the user/sender
-        transfer::public_transfer(payment, sender);   
+            // Transfer the remainder back to the user/sender
+            transfer::public_transfer(payment, sender);   
         
-        warlord.class = newclass;
+            warlord.class = newclass;
+        }
+        else {abort E_WARLORD_MUST_BE_LEVEL_10_FOR_CLASS_CHANGE}
     }   
 }

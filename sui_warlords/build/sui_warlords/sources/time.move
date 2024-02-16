@@ -13,7 +13,7 @@ module sui_warlords::time {
     // Syntax is witness, decimals, symbol, name, description, icon_url, ctx
     
     fun init(witness: TIME, ctx: &mut TxContext) {
-        let (treasury, metadata) = coin::create_currency(witness, 0, b"TIME", b"TIME", b"Sui_Warlords TIME currency", option::none(), ctx);
+        let (treasury, metadata) = coin::create_currency(witness, 2, b"TIME", b"TIME", b"Sui_Warlords TIME currency", option::none(), ctx);
         transfer::public_freeze_object(metadata);
         transfer::public_transfer(treasury, tx_context::sender(ctx))
     }
