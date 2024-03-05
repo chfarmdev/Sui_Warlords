@@ -8,6 +8,10 @@ module sui_warlords::reservoir {
     use sui::tx_context::TxContext;
 
     friend sui_warlords::warlord;
+    friend sui_warlords::armorchest;
+    friend sui_warlords::armorleg;
+    friend sui_warlords::armorhelmet;
+    friend sui_warlords::armorgauntlets;
     
     const EBalanceDONE: u64 = 1;
 
