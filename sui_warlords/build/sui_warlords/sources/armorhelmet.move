@@ -134,6 +134,40 @@ module sui_warlords::armorhelmet {
     }
 
 
+    // ===== Setters & Getters =====
+    
+    public fun get_helmet_strength(armor: &SuiWarlordArmorHelmet): u64 {
+        armor.strength
+    }
+
+    public fun get_helmet_endurance(armor: &SuiWarlordArmorHelmet): u64 {
+        armor.endurance
+    }
+
+    public fun get_helmet_dexterity(armor: &SuiWarlordArmorHelmet): u64 {
+        armor.dexterity
+    }
+
+    public fun get_helmet_agility(armor: &SuiWarlordArmorHelmet): u64 {
+        armor.agility
+    }
+
+    public fun get_helmet_intelligence(armor: &SuiWarlordArmorHelmet): u64 {
+        armor.intelligence
+    }
+
+    public fun get_helmet_wisdom(armor: &SuiWarlordArmorHelmet): u64 {
+        armor.wisdom
+    }
+
+    public fun get_helmet_vitality(armor: &SuiWarlordArmorHelmet): u64 {
+        armor.vitality
+    }
+
+    public fun get_helmet_luck(armor: &SuiWarlordArmorHelmet): u64 {
+        armor.luck
+    }
+
     const MIN_ARMOR_STAT: u8 = 0;
     const MAX_ARMOR_STAT: u8 = 8;
     const PRIMARY_STAT_BONUS: u64 = 8;

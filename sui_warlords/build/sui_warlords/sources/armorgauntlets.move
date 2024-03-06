@@ -134,6 +134,41 @@ module sui_warlords::armorgauntlets {
     }
 
 
+    // ===== Setters & Getters =====
+    
+    public fun get_gauntlets_strength(armor: &SuiWarlordArmorGauntlets): u64 {
+        armor.strength
+    }
+
+    public fun get_gauntlets_endurance(armor: &SuiWarlordArmorGauntlets): u64 {
+        armor.endurance
+    }
+
+    public fun get_gauntlets_dexterity(armor: &SuiWarlordArmorGauntlets): u64 {
+        armor.dexterity
+    }
+
+    public fun get_gauntlets_agility(armor: &SuiWarlordArmorGauntlets): u64 {
+        armor.agility
+    }
+
+    public fun get_gauntlets_intelligence(armor: &SuiWarlordArmorGauntlets): u64 {
+        armor.intelligence
+    }
+
+    public fun get_gauntlets_wisdom(armor: &SuiWarlordArmorGauntlets): u64 {
+        armor.wisdom
+    }
+
+    public fun get_gauntlets_vitality(armor: &SuiWarlordArmorGauntlets): u64 {
+        armor.vitality
+    }
+
+    public fun get_gauntlets_luck(armor: &SuiWarlordArmorGauntlets): u64 {
+        armor.luck
+    }
+    
+
     const MIN_ARMOR_STAT: u8 = 0;
     const MAX_ARMOR_STAT: u8 = 8;
     const PRIMARY_STAT_BONUS: u64 = 8;

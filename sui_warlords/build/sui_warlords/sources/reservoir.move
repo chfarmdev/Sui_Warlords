@@ -9,9 +9,10 @@ module sui_warlords::reservoir {
 
     friend sui_warlords::warlord;
     friend sui_warlords::armorchest;
-    friend sui_warlords::armorleg;
+    friend sui_warlords::armorleggings;
     friend sui_warlords::armorhelmet;
     friend sui_warlords::armorgauntlets;
+    friend sui_warlords::armorboots;
     
     const EBalanceDONE: u64 = 1;
 

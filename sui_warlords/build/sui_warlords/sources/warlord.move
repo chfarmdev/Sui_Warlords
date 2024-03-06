@@ -1,6 +1,6 @@
 #[lint_allow(self_transfer)]
 module sui_warlords::warlord {   
-    use std::string::{Self, utf8, String};
+    use std::string::{Self, utf8, String};    
     use sui::object::{Self, ID, UID};
     use sui::event;
     use sui::transfer;
@@ -8,7 +8,8 @@ module sui_warlords::warlord {
     use sui::coin::{Self, Coin};
     use sui::sui::SUI;
     use sui::pay;
-    use sui::clock::{Clock};    
+    use sui::clock::{Clock};  
+    use sui::dynamic_object_field as dof;  
     
     // The creator bundle: these two packages often go together.
     use sui::package;
@@ -19,8 +20,13 @@ module sui_warlords::warlord {
     use sui_warlords::reservoir::{Account};
     use sui_warlords::blood::{BLOOD};
     use sui_warlords::time::{TIME};
+    use sui_warlords::armorboots::{SuiWarlordArmorBoots};    
+    use sui_warlords::armorchest::{SuiWarlordArmorChest}; 
+    use sui_warlords::armorgauntlets::{SuiWarlordArmorGauntlets}; 
+    use sui_warlords::armorhelmet::{SuiWarlordArmorHelmet}; 
+    use sui_warlords::armorleggings::{SuiWarlordArmorLeggings}; 
 
-    friend sui_warlords::class;    
+    friend sui_warlords::class;      
 
 
     // Warlord NFT, mintable for 5 SUI, emits BLOOD & TIME from reservoir
@@ -47,7 +53,7 @@ module sui_warlords::warlord {
         intelligence: u64,
         wisdom: u64,
         vitality: u64,
-        luck: u64,
+        luck: u64,         
     }
    
 
@@ -117,7 +123,189 @@ module sui_warlords::warlord {
     }
 
 
-    // ===== Setters & Getters =====
+    // ===== Dynamic Object Fields =====
+
+    // Equip boots on the warlord    
+    public fun boots_equip(warlord: &mut SuiWarlordNFT, boots: SuiWarlordArmorBoots, ctx: &mut TxContext) {
+        
+        // Check if boots are equipped, if so, remove them and send to user
+        if (dof::exists_(&warlord.id, b"Boots") == true) {
+            boots_remove(warlord, ctx);
+        };
+        warlord.strength = warlord.strength + sui_warlords::armorboots::get_boots_strength(&boots);
+        warlord.endurance = warlord.endurance + sui_warlords::armorboots::get_boots_endurance(&boots);
+        warlord.dexterity = warlord.dexterity + sui_warlords::armorboots::get_boots_dexterity(&boots);
+        warlord.agility = warlord.agility + sui_warlords::armorboots::get_boots_agility(&boots);
+        warlord.intelligence = warlord.intelligence + sui_warlords::armorboots::get_boots_intelligence(&boots);
+        warlord.wisdom = warlord.wisdom + sui_warlords::armorboots::get_boots_wisdom(&boots);
+        warlord.vitality = warlord.vitality + sui_warlords::armorboots::get_boots_vitality(&boots);
+        warlord.luck = warlord.luck + sui_warlords::armorboots::get_boots_luck(&boots);
+        
+        dof::add(&mut warlord.id, b"Boots", boots);
+    }
+
+    public fun boots_remove(warlord: &mut SuiWarlordNFT, ctx: &mut TxContext) {
+        let sender = tx_context::sender(ctx);
+        let boots: SuiWarlordArmorBoots = dof::remove(&mut warlord.id, b"Boots");
+        
+        warlord.strength = warlord.strength - sui_warlords::armorboots::get_boots_strength(&boots);
+        warlord.endurance = warlord.endurance - sui_warlords::armorboots::get_boots_endurance(&boots);
+        warlord.dexterity = warlord.dexterity - sui_warlords::armorboots::get_boots_dexterity(&boots);
+        warlord.agility = warlord.agility - sui_warlords::armorboots::get_boots_agility(&boots);
+        warlord.intelligence = warlord.intelligence - sui_warlords::armorboots::get_boots_intelligence(&boots);
+        warlord.wisdom = warlord.wisdom - sui_warlords::armorboots::get_boots_wisdom(&boots);
+        warlord.vitality = warlord.vitality - sui_warlords::armorboots::get_boots_vitality(&boots);
+        warlord.luck = warlord.luck - sui_warlords::armorboots::get_boots_luck(&boots);
+
+        transfer::public_transfer(boots, sender);
+    }
+
+
+    // Equip chest on the warlord    
+    public fun chest_equip(warlord: &mut SuiWarlordNFT, chest: SuiWarlordArmorChest, ctx: &mut TxContext) {
+        
+        // Check if chest is equipped, if so, remove them and send to user
+        if (dof::exists_(&warlord.id, b"Chest") == true) {
+            chest_remove(warlord, ctx);
+        };
+        warlord.strength = warlord.strength + sui_warlords::armorchest::get_chest_strength(&chest);
+        warlord.endurance = warlord.endurance + sui_warlords::armorchest::get_chest_endurance(&chest);
+        warlord.dexterity = warlord.dexterity + sui_warlords::armorchest::get_chest_dexterity(&chest);
+        warlord.agility = warlord.agility + sui_warlords::armorchest::get_chest_agility(&chest);
+        warlord.intelligence = warlord.intelligence + sui_warlords::armorchest::get_chest_intelligence(&chest);
+        warlord.wisdom = warlord.wisdom + sui_warlords::armorchest::get_chest_wisdom(&chest);
+        warlord.vitality = warlord.vitality + sui_warlords::armorchest::get_chest_vitality(&chest);
+        warlord.luck = warlord.luck + sui_warlords::armorchest::get_chest_luck(&chest);
+        
+        dof::add(&mut warlord.id, b"Chest", chest);
+    }
+
+    public fun chest_remove(warlord: &mut SuiWarlordNFT, ctx: &mut TxContext) {
+        let sender = tx_context::sender(ctx);
+        let chest: SuiWarlordArmorChest = dof::remove(&mut warlord.id, b"Chest");
+        
+        warlord.strength = warlord.strength - sui_warlords::armorchest::get_chest_strength(&chest);
+        warlord.endurance = warlord.endurance - sui_warlords::armorchest::get_chest_endurance(&chest);
+        warlord.dexterity = warlord.dexterity - sui_warlords::armorchest::get_chest_dexterity(&chest);
+        warlord.agility = warlord.agility - sui_warlords::armorchest::get_chest_agility(&chest);
+        warlord.intelligence = warlord.intelligence - sui_warlords::armorchest::get_chest_intelligence(&chest);
+        warlord.wisdom = warlord.wisdom - sui_warlords::armorchest::get_chest_wisdom(&chest);
+        warlord.vitality = warlord.vitality - sui_warlords::armorchest::get_chest_vitality(&chest);
+        warlord.luck = warlord.luck - sui_warlords::armorchest::get_chest_luck(&chest);
+
+        transfer::public_transfer(chest, sender);
+    }
+
+
+    // Equip gauntlets on the warlord    
+    public fun gauntlets_equip(warlord: &mut SuiWarlordNFT, gauntlets: SuiWarlordArmorGauntlets, ctx: &mut TxContext) {
+        
+        // Check if gauntlets is equipped, if so, remove them and send to user
+        if (dof::exists_(&warlord.id, b"Gauntlets") == true) {
+            gauntlets_remove(warlord, ctx);
+        };
+        warlord.strength = warlord.strength + sui_warlords::armorgauntlets::get_gauntlets_strength(&gauntlets);
+        warlord.endurance = warlord.endurance + sui_warlords::armorgauntlets::get_gauntlets_endurance(&gauntlets);
+        warlord.dexterity = warlord.dexterity + sui_warlords::armorgauntlets::get_gauntlets_dexterity(&gauntlets);
+        warlord.agility = warlord.agility + sui_warlords::armorgauntlets::get_gauntlets_agility(&gauntlets);
+        warlord.intelligence = warlord.intelligence + sui_warlords::armorgauntlets::get_gauntlets_intelligence(&gauntlets);
+        warlord.wisdom = warlord.wisdom + sui_warlords::armorgauntlets::get_gauntlets_wisdom(&gauntlets);
+        warlord.vitality = warlord.vitality + sui_warlords::armorgauntlets::get_gauntlets_vitality(&gauntlets);
+        warlord.luck = warlord.luck + sui_warlords::armorgauntlets::get_gauntlets_luck(&gauntlets);
+        
+        dof::add(&mut warlord.id, b"Gauntlets", gauntlets);
+    }
+
+    public fun gauntlets_remove(warlord: &mut SuiWarlordNFT, ctx: &mut TxContext) {
+        let sender = tx_context::sender(ctx);
+        let gauntlets: SuiWarlordArmorGauntlets = dof::remove(&mut warlord.id, b"Gauntlets");
+        
+        warlord.strength = warlord.strength - sui_warlords::armorgauntlets::get_gauntlets_strength(&gauntlets);
+        warlord.endurance = warlord.endurance - sui_warlords::armorgauntlets::get_gauntlets_endurance(&gauntlets);
+        warlord.dexterity = warlord.dexterity - sui_warlords::armorgauntlets::get_gauntlets_dexterity(&gauntlets);
+        warlord.agility = warlord.agility - sui_warlords::armorgauntlets::get_gauntlets_agility(&gauntlets);
+        warlord.intelligence = warlord.intelligence - sui_warlords::armorgauntlets::get_gauntlets_intelligence(&gauntlets);
+        warlord.wisdom = warlord.wisdom - sui_warlords::armorgauntlets::get_gauntlets_wisdom(&gauntlets);
+        warlord.vitality = warlord.vitality - sui_warlords::armorgauntlets::get_gauntlets_vitality(&gauntlets);
+        warlord.luck = warlord.luck - sui_warlords::armorgauntlets::get_gauntlets_luck(&gauntlets);
+
+        transfer::public_transfer(gauntlets, sender);
+    }
+
+
+    // Equip helmet on the warlord    
+    public fun helmet_equip(warlord: &mut SuiWarlordNFT, helmet: SuiWarlordArmorHelmet, ctx: &mut TxContext) {
+        
+        // Check if helmet is equipped, if so, remove them and send to user
+        if (dof::exists_(&warlord.id, b"Helmet") == true) {
+            helmet_remove(warlord, ctx);
+        };
+        warlord.strength = warlord.strength + sui_warlords::armorhelmet::get_helmet_strength(&helmet);
+        warlord.endurance = warlord.endurance + sui_warlords::armorhelmet::get_helmet_endurance(&helmet);
+        warlord.dexterity = warlord.dexterity + sui_warlords::armorhelmet::get_helmet_dexterity(&helmet);
+        warlord.agility = warlord.agility + sui_warlords::armorhelmet::get_helmet_agility(&helmet);
+        warlord.intelligence = warlord.intelligence + sui_warlords::armorhelmet::get_helmet_intelligence(&helmet);
+        warlord.wisdom = warlord.wisdom + sui_warlords::armorhelmet::get_helmet_wisdom(&helmet);
+        warlord.vitality = warlord.vitality + sui_warlords::armorhelmet::get_helmet_vitality(&helmet);
+        warlord.luck = warlord.luck + sui_warlords::armorhelmet::get_helmet_luck(&helmet);
+        
+        dof::add(&mut warlord.id, b"Helmet", helmet);
+    }
+
+    public fun helmet_remove(warlord: &mut SuiWarlordNFT, ctx: &mut TxContext) {
+        let sender = tx_context::sender(ctx);
+        let helmet: SuiWarlordArmorHelmet = dof::remove(&mut warlord.id, b"Helmet");
+        
+        warlord.strength = warlord.strength - sui_warlords::armorhelmet::get_helmet_strength(&helmet);
+        warlord.endurance = warlord.endurance - sui_warlords::armorhelmet::get_helmet_endurance(&helmet);
+        warlord.dexterity = warlord.dexterity - sui_warlords::armorhelmet::get_helmet_dexterity(&helmet);
+        warlord.agility = warlord.agility - sui_warlords::armorhelmet::get_helmet_agility(&helmet);
+        warlord.intelligence = warlord.intelligence - sui_warlords::armorhelmet::get_helmet_intelligence(&helmet);
+        warlord.wisdom = warlord.wisdom - sui_warlords::armorhelmet::get_helmet_wisdom(&helmet);
+        warlord.vitality = warlord.vitality - sui_warlords::armorhelmet::get_helmet_vitality(&helmet);
+        warlord.luck = warlord.luck - sui_warlords::armorhelmet::get_helmet_luck(&helmet);
+
+        transfer::public_transfer(helmet, sender);
+    }
+
+
+    // Equip leggings on the warlord    
+    public fun leggings_equip(warlord: &mut SuiWarlordNFT, leggings: SuiWarlordArmorLeggings, ctx: &mut TxContext) {
+        
+        // Check if leggings is equipped, if so, remove them and send to user
+        if (dof::exists_(&warlord.id, b"Leggings") == true) {
+            leggings_remove(warlord, ctx);
+        };
+        warlord.strength = warlord.strength + sui_warlords::armorleggings::get_leggings_strength(&leggings);
+        warlord.endurance = warlord.endurance + sui_warlords::armorleggings::get_leggings_endurance(&leggings);
+        warlord.dexterity = warlord.dexterity + sui_warlords::armorleggings::get_leggings_dexterity(&leggings);
+        warlord.agility = warlord.agility + sui_warlords::armorleggings::get_leggings_agility(&leggings);
+        warlord.intelligence = warlord.intelligence + sui_warlords::armorleggings::get_leggings_intelligence(&leggings);
+        warlord.wisdom = warlord.wisdom + sui_warlords::armorleggings::get_leggings_wisdom(&leggings);
+        warlord.vitality = warlord.vitality + sui_warlords::armorleggings::get_leggings_vitality(&leggings);
+        warlord.luck = warlord.luck + sui_warlords::armorleggings::get_leggings_luck(&leggings);
+        
+        dof::add(&mut warlord.id, b"Leggings", leggings);
+    }
+
+    public fun leggings_remove(warlord: &mut SuiWarlordNFT, ctx: &mut TxContext) {
+        let sender = tx_context::sender(ctx);
+        let leggings: SuiWarlordArmorLeggings = dof::remove(&mut warlord.id, b"Leggings");
+        
+        warlord.strength = warlord.strength - sui_warlords::armorleggings::get_leggings_strength(&leggings);
+        warlord.endurance = warlord.endurance - sui_warlords::armorleggings::get_leggings_endurance(&leggings);
+        warlord.dexterity = warlord.dexterity - sui_warlords::armorleggings::get_leggings_dexterity(&leggings);
+        warlord.agility = warlord.agility - sui_warlords::armorleggings::get_leggings_agility(&leggings);
+        warlord.intelligence = warlord.intelligence - sui_warlords::armorleggings::get_leggings_intelligence(&leggings);
+        warlord.wisdom = warlord.wisdom - sui_warlords::armorleggings::get_leggings_wisdom(&leggings);
+        warlord.vitality = warlord.vitality - sui_warlords::armorleggings::get_leggings_vitality(&leggings);
+        warlord.luck = warlord.luck - sui_warlords::armorleggings::get_leggings_luck(&leggings);
+
+        transfer::public_transfer(leggings, sender);
+    }
+
+
+    // ===== Setters & Getters =====   
 
     // Get the Warlords Name
     public fun get_name(warlord: &SuiWarlordNFT): string::String {
@@ -257,7 +445,7 @@ module sui_warlords::warlord {
             intelligence: rand::rng(MIN_STAT, MAX_STAT, ctx),
             wisdom: rand::rng(MIN_STAT, MAX_STAT, ctx),
             vitality: rand::rng(MIN_STAT, MAX_STAT, ctx),
-            luck: rand::rng(MIN_STAT, MAX_STAT, ctx)
+            luck: rand::rng(MIN_STAT, MAX_STAT, ctx),            
         };
 
         event::emit(SuiWarlordMinted {
@@ -294,12 +482,13 @@ module sui_warlords::warlord {
     const TIME_FOR_BURN: u64 = 5;
     
     public fun warlord_burn(warlord: SuiWarlordNFT, accobj: &mut Account, ctx: &mut TxContext) {
+        let recipient = tx_context::sender(ctx);
+       
         let SuiWarlordNFT {id, name: _, description: _, class: _, level: _, createtime: _, claimedblood: _, claimedtime: _, strength: _, endurance: _, dexterity: _, agility: _, intelligence: _, wisdom: _, vitality: _, luck: _} = warlord;
-        object::delete(id);
+        object::delete(id);      
         
         // Return BLOOD to sender
-        let amount = BLOOD_FOR_BURN;
-        let recipient = tx_context::sender(ctx);        
+        let amount = BLOOD_FOR_BURN;              
         let bloodpayout: Coin<BLOOD> = sui_warlords::reservoir::withdraw(accobj, amount, ctx);
         transfer::public_transfer(bloodpayout, recipient);
         // Return TIME to sender

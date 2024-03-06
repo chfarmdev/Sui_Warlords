@@ -134,6 +134,41 @@ module sui_warlords::armorchest {
     }
 
 
+    // ===== Setters & Getters =====
+    
+    public fun get_chest_strength(armor: &SuiWarlordArmorChest): u64 {
+        armor.strength
+    }
+
+    public fun get_chest_endurance(armor: &SuiWarlordArmorChest): u64 {
+        armor.endurance
+    }
+
+    public fun get_chest_dexterity(armor: &SuiWarlordArmorChest): u64 {
+        armor.dexterity
+    }
+
+    public fun get_chest_agility(armor: &SuiWarlordArmorChest): u64 {
+        armor.agility
+    }
+
+    public fun get_chest_intelligence(armor: &SuiWarlordArmorChest): u64 {
+        armor.intelligence
+    }
+
+    public fun get_chest_wisdom(armor: &SuiWarlordArmorChest): u64 {
+        armor.wisdom
+    }
+
+    public fun get_chest_vitality(armor: &SuiWarlordArmorChest): u64 {
+        armor.vitality
+    }
+
+    public fun get_chest_luck(armor: &SuiWarlordArmorChest): u64 {
+        armor.luck
+    }
+
+
     const MIN_ARMOR_STAT: u8 = 0;
     const MAX_ARMOR_STAT: u8 = 8;
     const PRIMARY_STAT_BONUS: u64 = 8;

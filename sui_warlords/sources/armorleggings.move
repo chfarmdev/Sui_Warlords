@@ -1,5 +1,5 @@
 #[lint_allow(self_transfer)]
-module sui_warlords::armorleg {    
+module sui_warlords::armorleggings {    
     use std::string::{Self, utf8, String};
     use sui::object::{Self, ID, UID};
     use sui::event;
@@ -23,7 +23,7 @@ module sui_warlords::armorleg {
 
             
     // Armor NFT
-    public struct SuiWarlordArmorLeg has key, store {
+    public struct SuiWarlordArmorLeggings has key, store {
         id: UID,
         // Armor style
         style: String,        
@@ -96,10 +96,10 @@ module sui_warlords::armorleg {
     }
 
     // One-Time-Witness for the module
-    public struct ARMORLEG has drop {}
+    public struct ARMORLEGGINGS has drop {}
 
     // Init to claim publisher object and create initial display configuration
-    fun init(otw: ARMORLEG, ctx: &mut TxContext) {
+    fun init(otw: ARMORLEGGINGS, ctx: &mut TxContext) {
         let keys = vector[
             utf8(b"name"),
             utf8(b"link"),
@@ -108,12 +108,12 @@ module sui_warlords::armorleg {
         ];
 
         let values = vector[
-            // Name references gradestring / style /slot properties "Common Plate Leg"
-            utf8(b"{gradestring} {style} Leg"),
+            // Name references gradestring / style /slot properties "Common Plate Leggings"
+            utf8(b"{gradestring} {style} Leggings"),
             // Link references static URL + id property
-            utf8(b"https://suiwarlords.com/main/armor/leg/{id}"),
+            utf8(b"https://suiwarlords.com/main/armor/leggings/{id}"),
             // For `image_url` use an IPFS template + `image_url` property.
-            utf8(b"ipfs://{gradestring}/{enhancements}/{style}/Leg"),            
+            utf8(b"ipfs://{gradestring}/{enhancements}/{style}/Leggings"),            
             // Project URL
             utf8(b"https://suiwarlords.com"),            
         ];
@@ -121,8 +121,8 @@ module sui_warlords::armorleg {
         // Claim the Publisher for the module
         let publisher = package::claim(otw, ctx);
 
-        // Get a new Display object for the Leg Armor type
-        let mut display = display::new_with_fields<SuiWarlordArmorLeg>(
+        // Get a new Display object for the Leggings Armor type
+        let mut display = display::new_with_fields<SuiWarlordArmorLeggings>(
             &publisher, keys, values, ctx
         );
 
@@ -131,6 +131,41 @@ module sui_warlords::armorleg {
 
         transfer::public_transfer(publisher, sender(ctx));
         transfer::public_transfer(display, sender(ctx));
+    }
+
+
+    // ===== Setters & Getters =====
+    
+    public fun get_leggings_strength(armor: &SuiWarlordArmorLeggings): u64 {
+        armor.strength
+    }
+
+    public fun get_leggings_endurance(armor: &SuiWarlordArmorLeggings): u64 {
+        armor.endurance
+    }
+
+    public fun get_leggings_dexterity(armor: &SuiWarlordArmorLeggings): u64 {
+        armor.dexterity
+    }
+
+    public fun get_leggings_agility(armor: &SuiWarlordArmorLeggings): u64 {
+        armor.agility
+    }
+
+    public fun get_leggings_intelligence(armor: &SuiWarlordArmorLeggings): u64 {
+        armor.intelligence
+    }
+
+    public fun get_leggings_wisdom(armor: &SuiWarlordArmorLeggings): u64 {
+        armor.wisdom
+    }
+
+    public fun get_leggings_vitality(armor: &SuiWarlordArmorLeggings): u64 {
+        armor.vitality
+    }
+
+    public fun get_leggings_luck(armor: &SuiWarlordArmorLeggings): u64 {
+        armor.luck
     }
 
 
@@ -151,9 +186,9 @@ module sui_warlords::armorleg {
 
     const E_INSUFFICIENT_PAYMENT: u64 = 0;
 
-    // Create a new Sui Warlords COMMON Leg Armor NFT. Style, TIME payment, and COMMON payment are required fields
+    // Create a new Sui Warlords COMMON Leggings Armor NFT. Style, TIME payment, and COMMON payment are required fields
     // URL will be managed by a display object   
-    public fun armor_mint_common_leg(
+    public fun armor_mint_common_leggings(
         style: String,               
         mut payment: Coin<sui_warlords::time::TIME>,
         mut payment2: Coin<sui_warlords::common::COMMON>,        
@@ -177,9 +212,9 @@ module sui_warlords::armorleg {
         
         // Random number between 0 & 255 to derive stat bonus
         let tempbonus = rand::rng(TEMPBONUSMIN, TEMPBONUSMAX, ctx);
-        let armorstatbonus = sui_warlords::armorleg::armor_random_bonus(tempbonus);
+        let armorstatbonus = sui_warlords::armorleggings::armor_random_bonus(tempbonus);
 
-        let mut armor = SuiWarlordArmorLeg {
+        let mut armor = SuiWarlordArmorLeggings {
             id: object::new(ctx),
             style: style,                            
             gradestring: utf8(b"Common"),  
@@ -264,9 +299,9 @@ module sui_warlords::armorleg {
     const ARMOR_UNCOMMON_COST: u64 = 4;
     const ARMOR_UNCOMMON_GRADE: u64 = 2;
 
-    // Create a new Sui Warlords UNCOMMON Leg Armor NFT. Style, TIME payment, and UNCOMMON payment are required fields
+    // Create a new Sui Warlords UNCOMMON Leggings Armor NFT. Style, TIME payment, and UNCOMMON payment are required fields
     // URL will be managed by a display object    
-    public fun armor_mint_uncommon_leg(
+    public fun armor_mint_uncommon_leggings(
         style: String,              
         mut payment: Coin<sui_warlords::time::TIME>,
         mut payment2: Coin<sui_warlords::uncommon::UNCOMMON>,        
@@ -290,9 +325,9 @@ module sui_warlords::armorleg {
         
         // Random number between 0 & 256 to derive stat bonus
         let tempbonus = rand::rng(TEMPBONUSMIN, TEMPBONUSMAX, ctx);
-        let armorstatbonus = sui_warlords::armorleg::armor_random_bonus(tempbonus);
+        let armorstatbonus = sui_warlords::armorleggings::armor_random_bonus(tempbonus);
 
-        let mut armor = SuiWarlordArmorLeg {
+        let mut armor = SuiWarlordArmorLeggings {
             id: object::new(ctx),
             style: style,           
             gradestring: utf8(b"Uncommon"),  
@@ -377,9 +412,9 @@ module sui_warlords::armorleg {
     const ARMOR_RARE_COST: u64 = 6;
     const ARMOR_RARE_GRADE: u64 = 3;
 
-    // Create a new Sui Warlords RARE Leg Armor NFT. Style, TIME payment, and RARE payment are required fields
+    // Create a new Sui Warlords RARE Leggings Armor NFT. Style, TIME payment, and RARE payment are required fields
     // URL will be managed by a display object     
-    public fun armor_mint_rare_leg(
+    public fun armor_mint_rare_leggings(
         style: String,              
         mut payment: Coin<sui_warlords::time::TIME>,
         mut payment2: Coin<sui_warlords::rare::RARE>,        
@@ -403,9 +438,9 @@ module sui_warlords::armorleg {
         
         // Random number between 0 & 256 to derive stat bonus
         let tempbonus = rand::rng(TEMPBONUSMIN, TEMPBONUSMAX, ctx);
-        let armorstatbonus = sui_warlords::armorleg::armor_random_bonus(tempbonus);
+        let armorstatbonus = sui_warlords::armorleggings::armor_random_bonus(tempbonus);
 
-        let mut armor = SuiWarlordArmorLeg {
+        let mut armor = SuiWarlordArmorLeggings {
             id: object::new(ctx),
             style: style,
             gradestring: utf8(b"Rare"),   
@@ -490,9 +525,9 @@ module sui_warlords::armorleg {
     const ARMOR_LEGENDARY_COST: u64 = 8;
     const ARMOR_LEGENDARY_GRADE: u64 = 4;
 
-    // Create a new Sui Warlords Legendary Leg Armor NFT. Style, TIME payment, and LEGENDARY payment are required fields
+    // Create a new Sui Warlords Legendary Leggings Armor NFT. Style, TIME payment, and LEGENDARY payment are required fields
     // URL will be managed by a display object   
-    public fun armor_mint_legendary_leg(
+    public fun armor_mint_legendary_leggings(
         style: String,              
         mut payment: Coin<sui_warlords::time::TIME>,
         mut payment2: Coin<sui_warlords::legendary::LEGENDARY>,        
@@ -516,9 +551,9 @@ module sui_warlords::armorleg {
         
         // Random number between 0 & 256 to derive stat bonus
         let tempbonus = rand::rng(TEMPBONUSMIN, TEMPBONUSMAX, ctx);
-        let armorstatbonus = sui_warlords::armorleg::armor_random_bonus(tempbonus);
+        let armorstatbonus = sui_warlords::armorleggings::armor_random_bonus(tempbonus);
 
-        let mut armor = SuiWarlordArmorLeg {
+        let mut armor = SuiWarlordArmorLeggings {
             id: object::new(ctx),
             style: style,
             gradestring: utf8(b"Legendary"),   
@@ -603,9 +638,9 @@ module sui_warlords::armorleg {
     const ARMOR_MYTHIC_COST: u64 = 10;
     const ARMOR_MYTHIC_GRADE: u64 = 5;
 
-    // Create a new Sui Warlords MYTHIC Leg Armor NFT. Style, TIME payment, and MYTHIC payment are required fields
+    // Create a new Sui Warlords MYTHIC Leggings Armor NFT. Style, TIME payment, and MYTHIC payment are required fields
     // URL will be managed by a display object   
-    public fun armor_mint_mythic_leg(
+    public fun armor_mint_mythic_leggings(
         style: String,          
         mut payment: Coin<sui_warlords::time::TIME>,
         mut payment2: Coin<sui_warlords::mythic::MYTHIC>,        
@@ -629,9 +664,9 @@ module sui_warlords::armorleg {
         
         // Random number between 0 & 256 to derive stat bonus
         let tempbonus = rand::rng(TEMPBONUSMIN, TEMPBONUSMAX, ctx);
-        let armorstatbonus = sui_warlords::armorleg::armor_random_bonus(tempbonus);
+        let armorstatbonus = sui_warlords::armorleggings::armor_random_bonus(tempbonus);
 
-        let mut armor = SuiWarlordArmorLeg {
+        let mut armor = SuiWarlordArmorLeggings {
             id: object::new(ctx),
             style: style,
             gradestring: utf8(b"Mythic"),  
@@ -759,7 +794,7 @@ module sui_warlords::armorleg {
 
 
     // Transfer Chest Armor to recipient
-     public fun leg_armor_transfer(armor: SuiWarlordArmorLeg, recipient: address) {
+     public fun leggings_armor_transfer(armor: SuiWarlordArmorLeggings, recipient: address) {
         transfer::public_transfer(armor, recipient)
     }
 
@@ -772,9 +807,9 @@ module sui_warlords::armorleg {
     const E_ARMOR_CANNOT_BE_FURTHER_ENHANCED: u64 = 9;
     const E_ARMOR_WRONG_GRADE: u64 = 10;
 
-    // Enhance common leg armor function. Chance to burn item scales with enhancement level.    
-    public fun leg_armor_enhance_common(
-        armor: SuiWarlordArmorLeg,
+    // Enhance common leggings armor function. Chance to burn item scales with enhancement level.    
+    public fun leggings_armor_enhance_common(
+        armor: SuiWarlordArmorLeggings,
         accobj: &mut Account,
         mut payment: Coin<sui_warlords::time::TIME>,
         mut payment2: Coin<sui_warlords::common::COMMON>,               
@@ -808,11 +843,11 @@ module sui_warlords::armorleg {
         let random = rand::rng(ENHANCEMENT_RNG_MIN, ENHANCEMENT_RNG_MAX, ctx);
         let chancetoburn = armor.enhancements * 5;
         if (random <= chancetoburn) {
-            leg_armor_burn(armor, accobj, ctx);
+            leggings_armor_burn(armor, accobj, ctx);
         }
         else {
             let mut armor2 = armor;
-            leg_armor_enhance(&mut armor2);
+            leggings_armor_enhance(&mut armor2);
 
             // Emit event for enhancement changes
             event::emit(SuiWarlordArmorEnhancementEvent {
@@ -837,9 +872,9 @@ module sui_warlords::armorleg {
     const ENHANCEMENT_UNCOMMON_TIME_COST: u64 = 2;
     const ENHANCEMENT_UNCOMMON_COST: u64 = 2;     
 
-    // Enhance uncommon leg armor function. Chance to burn item scales with enhancement level.    
-    public fun leg_armor_enhance_uncommon(
-        armor: SuiWarlordArmorLeg,
+    // Enhance uncommon leggings armor function. Chance to burn item scales with enhancement level.    
+    public fun leggings_armor_enhance_uncommon(
+        armor: SuiWarlordArmorLeggings,
         accobj: &mut Account,
         mut payment: Coin<sui_warlords::time::TIME>,
         mut payment2: Coin<sui_warlords::uncommon::UNCOMMON>,               
@@ -873,11 +908,11 @@ module sui_warlords::armorleg {
         let random = rand::rng(ENHANCEMENT_RNG_MIN, ENHANCEMENT_RNG_MAX, ctx);
         let chancetoburn = armor.enhancements * 5;
         if (random <= chancetoburn) {
-            leg_armor_burn(armor, accobj, ctx);
+            leggings_armor_burn(armor, accobj, ctx);
         }
         else {
             let mut armor2 = armor;
-            leg_armor_enhance(&mut armor2);
+            leggings_armor_enhance(&mut armor2);
 
             // Emit event for enhancement changes
             event::emit(SuiWarlordArmorEnhancementEvent {
@@ -902,9 +937,9 @@ module sui_warlords::armorleg {
     const ENHANCEMENT_RARE_TIME_COST: u64 = 2;
     const ENHANCEMENT_RARE_COST: u64 = 2;     
 
-    // Enhance rare leg armor function. Chance to burn item scales with enhancement level.    
-    public fun leg_armor_enhance_rare(
-        armor: SuiWarlordArmorLeg,
+    // Enhance rare leggings armor function. Chance to burn item scales with enhancement level.    
+    public fun leggings_armor_enhance_rare(
+        armor: SuiWarlordArmorLeggings,
         accobj: &mut Account,
         mut payment: Coin<sui_warlords::time::TIME>,
         mut payment2: Coin<sui_warlords::rare::RARE>,               
@@ -938,11 +973,11 @@ module sui_warlords::armorleg {
         let random = rand::rng(ENHANCEMENT_RNG_MIN, ENHANCEMENT_RNG_MAX, ctx);
         let chancetoburn = armor.enhancements * 5;
         if (random <= chancetoburn) {
-            leg_armor_burn(armor, accobj, ctx);
+            leggings_armor_burn(armor, accobj, ctx);
         }
         else {
             let mut armor2 = armor;
-            leg_armor_enhance(&mut armor2);
+            leggings_armor_enhance(&mut armor2);
 
             // Emit event for enhancement changes
             event::emit(SuiWarlordArmorEnhancementEvent {
@@ -967,9 +1002,9 @@ module sui_warlords::armorleg {
     const ENHANCEMENT_LEGENDARY_TIME_COST: u64 = 2;
     const ENHANCEMENT_LEGENDARY_COST: u64 = 2;     
 
-    // Enhance legendary leg armor function. Chance to burn item scales with enhancement level.    
-    public fun leg_armor_enhance_legendary(
-        armor: SuiWarlordArmorLeg,
+    // Enhance legendary leggings armor function. Chance to burn item scales with enhancement level.    
+    public fun leggings_armor_enhance_legendary(
+        armor: SuiWarlordArmorLeggings,
         accobj: &mut Account,
         mut payment: Coin<sui_warlords::time::TIME>,
         mut payment2: Coin<sui_warlords::legendary::LEGENDARY>,               
@@ -1003,11 +1038,11 @@ module sui_warlords::armorleg {
         let random = rand::rng(ENHANCEMENT_RNG_MIN, ENHANCEMENT_RNG_MAX, ctx);
         let chancetoburn = armor.enhancements * 5;
         if (random <= chancetoburn) {
-            leg_armor_burn(armor, accobj, ctx);
+            leggings_armor_burn(armor, accobj, ctx);
         }
         else {
             let mut armor2 = armor;
-            leg_armor_enhance(&mut armor2);
+            leggings_armor_enhance(&mut armor2);
 
             // Emit event for enhancement changes
             event::emit(SuiWarlordArmorEnhancementEvent {
@@ -1032,9 +1067,9 @@ module sui_warlords::armorleg {
     const ENHANCEMENT_MYTHIC_TIME_COST: u64 = 2;
     const ENHANCEMENT_MYTHIC_COST: u64 = 2;     
 
-    // Enhance mythic leg armor function. Chance to burn item scales with enhancement level.    
-    public fun leg_armor_enhance_mythic(
-        armor: SuiWarlordArmorLeg,
+    // Enhance mythic leggings armor function. Chance to burn item scales with enhancement level.    
+    public fun leggings_armor_enhance_mythic(
+        armor: SuiWarlordArmorLeggings,
         accobj: &mut Account,
         mut payment: Coin<sui_warlords::time::TIME>,
         mut payment2: Coin<sui_warlords::mythic::MYTHIC>,               
@@ -1068,11 +1103,11 @@ module sui_warlords::armorleg {
         let random = rand::rng(ENHANCEMENT_RNG_MIN, ENHANCEMENT_RNG_MAX, ctx);
         let chancetoburn = armor.enhancements * 5;
         if (random <= chancetoburn) {
-            leg_armor_burn(armor, accobj, ctx);
+            leggings_armor_burn(armor, accobj, ctx);
         }
         else {
             let mut armor2 = armor;
-            leg_armor_enhance(&mut armor2);
+            leggings_armor_enhance(&mut armor2);
 
             // Emit event for enhancement changes
             event::emit(SuiWarlordArmorEnhancementEvent {
@@ -1099,7 +1134,7 @@ module sui_warlords::armorleg {
     // Otherwise base stats of 4 or less can never progress due to enhancement
     const ENHANCEMENT_MULTIPLIER: u64 = 5;
 
-    fun leg_armor_enhance(armor: &mut SuiWarlordArmorLeg) {
+    fun leggings_armor_enhance(armor: &mut SuiWarlordArmorLeggings) {
             armor.enhancements = armor.enhancements + 1; 
             armor.strength = armor.strength + 1 + (armor.strength / ENHANCEMENT_MULTIPLIER);
             armor.endurance = armor.endurance + 1 + (armor.endurance / ENHANCEMENT_MULTIPLIER);
@@ -1116,7 +1151,7 @@ module sui_warlords::armorleg {
     // By not adding scaling based on existing enhancements, infinite creation of common objects should be restrictive.
     // Even if theoretically possible, items are weak enough to not matter much. Will drive engagement and game transactions.
     // And may ultimately end in a meta of its own.
-    public fun leg_armor_burn(armor: SuiWarlordArmorLeg, accobj: &mut Account, ctx: &mut TxContext) {
+    public fun leggings_armor_burn(armor: SuiWarlordArmorLeggings, accobj: &mut Account, ctx: &mut TxContext) {
         
         let amount = armor.bonus / 2;
         let recipient = tx_context::sender(ctx);
@@ -1142,7 +1177,7 @@ module sui_warlords::armorleg {
             transfer::public_transfer(essencepayout, recipient);
         };
 
-        let SuiWarlordArmorLeg {id, style: _, gradestring: _, grade: _, bonus: _, enhancements: _, armorlevelphysical: _, armorlevelmagical: _, strength: _, endurance: _, dexterity: _, agility: _, intelligence: _, wisdom: _, vitality: _, luck: _} = armor;
+        let SuiWarlordArmorLeggings {id, style: _, gradestring: _, grade: _, bonus: _, enhancements: _, armorlevelphysical: _, armorlevelmagical: _, strength: _, endurance: _, dexterity: _, agility: _, intelligence: _, wisdom: _, vitality: _, luck: _} = armor;
         object::delete(id);                              
     }   
 }

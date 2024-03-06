@@ -1,5 +1,5 @@
 #[lint_allow(self_transfer)]
-module sui_warlords::armorgauntlets {    
+module sui_warlords::armorboots {    
     use std::string::{Self, utf8, String};
     use sui::object::{Self, ID, UID};
     use sui::event;
@@ -23,7 +23,7 @@ module sui_warlords::armorgauntlets {
 
             
     // Armor NFT
-    public struct SuiWarlordArmorGauntlets has key, store {
+    public struct SuiWarlordArmorBoots has key, store {
         id: UID,
         // Armor style
         style: String,        
@@ -96,10 +96,10 @@ module sui_warlords::armorgauntlets {
     }
 
     // One-Time-Witness for the module
-    public struct ARMORGAUNTLETS has drop {}
+    public struct ARMORBOOTS has drop {}
 
     // Init to claim publisher object and create initial display configuration
-    fun init(otw: ARMORGAUNTLETS, ctx: &mut TxContext) {
+    fun init(otw: ARMORBOOTS, ctx: &mut TxContext) {
         let keys = vector[
             utf8(b"name"),
             utf8(b"link"),
@@ -108,21 +108,21 @@ module sui_warlords::armorgauntlets {
         ];
 
         let values = vector[
-            // Name references gradestring / style /slot properties "Common Plate Gauntlets"
-            utf8(b"{gradestring} {style} Gauntlets"),
+            // Name references gradestring / style /slot properties "Common Plate Boots"
+            utf8(b"{gradestring} {style} Boots"),
             // Link references static URL + id property
-            utf8(b"https://suiwarlords.com/main/armor/gauntlets/{id}"),
+            utf8(b"https://suiwarlords.com/main/armor/boots/{id}"),
             // For `image_url` use an IPFS template + `image_url` property.
-            utf8(b"ipfs://{gradestring}/{enhancements}/{style}/Gauntlets"),            
+            utf8(b"ipfs://{gradestring}/{enhancements}/{style}/Boots"),            
             // Project URL
             utf8(b"https://suiwarlords.com"),            
         ];
 
-        // Claim the Publisher for the module
+        // Claim the Publisher for this module
         let publisher = package::claim(otw, ctx);
 
-        // Get a new Display object for the Gauntlets Armor type
-        let mut display = display::new_with_fields<SuiWarlordArmorGauntlets>(
+        // Get a new Display object for the Chest Armor type
+        let mut display = display::new_with_fields<SuiWarlordArmorBoots>(
             &publisher, keys, values, ctx
         );
 
@@ -136,38 +136,38 @@ module sui_warlords::armorgauntlets {
 
     // ===== Setters & Getters =====
     
-    public fun get_gauntlets_strength(armor: &SuiWarlordArmorGauntlets): u64 {
+    public fun get_boots_strength(armor: &SuiWarlordArmorBoots): u64 {
         armor.strength
     }
 
-    public fun get_gauntlets_endurance(armor: &SuiWarlordArmorGauntlets): u64 {
+    public fun get_boots_endurance(armor: &SuiWarlordArmorBoots): u64 {
         armor.endurance
     }
 
-    public fun get_gauntlets_dexterity(armor: &SuiWarlordArmorGauntlets): u64 {
+    public fun get_boots_dexterity(armor: &SuiWarlordArmorBoots): u64 {
         armor.dexterity
     }
 
-    public fun get_gauntlets_agility(armor: &SuiWarlordArmorGauntlets): u64 {
+    public fun get_boots_agility(armor: &SuiWarlordArmorBoots): u64 {
         armor.agility
     }
 
-    public fun get_gauntlets_intelligence(armor: &SuiWarlordArmorGauntlets): u64 {
+    public fun get_boots_intelligence(armor: &SuiWarlordArmorBoots): u64 {
         armor.intelligence
     }
 
-    public fun get_gauntlets_wisdom(armor: &SuiWarlordArmorGauntlets): u64 {
+    public fun get_boots_wisdom(armor: &SuiWarlordArmorBoots): u64 {
         armor.wisdom
     }
 
-    public fun get_gauntlets_vitality(armor: &SuiWarlordArmorGauntlets): u64 {
+    public fun get_boots_vitality(armor: &SuiWarlordArmorBoots): u64 {
         armor.vitality
     }
 
-    public fun get_gauntlets_luck(armor: &SuiWarlordArmorGauntlets): u64 {
+    public fun get_boots_luck(armor: &SuiWarlordArmorBoots): u64 {
         armor.luck
     }
-    
+
 
     const MIN_ARMOR_STAT: u8 = 0;
     const MAX_ARMOR_STAT: u8 = 8;
@@ -186,9 +186,9 @@ module sui_warlords::armorgauntlets {
 
     const E_INSUFFICIENT_PAYMENT: u64 = 0;
 
-    // Create a new Sui Warlords COMMON Gauntlets Armor NFT. Style, TIME payment, and COMMON payment are required fields
+    // Create a new Sui Warlords COMMON Boots Armor NFT. Style, TIME payment, and COMMON payment are required fields
     // URL will be managed by a display object   
-    public fun armor_mint_common_gauntlets(
+    public fun armor_mint_common_boots(
         style: String,               
         mut payment: Coin<sui_warlords::time::TIME>,
         mut payment2: Coin<sui_warlords::common::COMMON>,        
@@ -212,9 +212,9 @@ module sui_warlords::armorgauntlets {
         
         // Random number between 0 & 255 to derive stat bonus
         let tempbonus = rand::rng(TEMPBONUSMIN, TEMPBONUSMAX, ctx);
-        let armorstatbonus = sui_warlords::armorgauntlets::armor_random_bonus(tempbonus);
+        let armorstatbonus = sui_warlords::armorboots::armor_random_bonus(tempbonus);
 
-        let mut armor = SuiWarlordArmorGauntlets {
+        let mut armor = SuiWarlordArmorBoots {
             id: object::new(ctx),
             style: style,                            
             gradestring: utf8(b"Common"),  
@@ -299,9 +299,9 @@ module sui_warlords::armorgauntlets {
     const ARMOR_UNCOMMON_COST: u64 = 4;
     const ARMOR_UNCOMMON_GRADE: u64 = 2;
 
-    // Create a new Sui Warlords UNCOMMON Gauntlets Armor NFT. Style, TIME payment, and UNCOMMON payment are required fields
+    // Create a new Sui Warlords UNCOMMON Boots Armor NFT. Style, TIME payment, and UNCOMMON payment are required fields
     // URL will be managed by a display object    
-    public fun armor_mint_uncommon_gauntlets(
+    public fun armor_mint_uncommon_boots(
         style: String,              
         mut payment: Coin<sui_warlords::time::TIME>,
         mut payment2: Coin<sui_warlords::uncommon::UNCOMMON>,        
@@ -325,9 +325,9 @@ module sui_warlords::armorgauntlets {
         
         // Random number between 0 & 256 to derive stat bonus
         let tempbonus = rand::rng(TEMPBONUSMIN, TEMPBONUSMAX, ctx);
-        let armorstatbonus = sui_warlords::armorgauntlets::armor_random_bonus(tempbonus);
+        let armorstatbonus = sui_warlords::armorboots::armor_random_bonus(tempbonus);
 
-        let mut armor = SuiWarlordArmorGauntlets {
+        let mut armor = SuiWarlordArmorBoots {
             id: object::new(ctx),
             style: style,           
             gradestring: utf8(b"Uncommon"),  
@@ -412,9 +412,9 @@ module sui_warlords::armorgauntlets {
     const ARMOR_RARE_COST: u64 = 6;
     const ARMOR_RARE_GRADE: u64 = 3;
 
-    // Create a new Sui Warlords RARE Gauntlets Armor NFT. Style, TIME payment, and RARE payment are required fields
+    // Create a new Sui Warlords RARE Boots Armor NFT. Style, TIME payment, and RARE payment are required fields
     // URL will be managed by a display object     
-    public fun armor_mint_rare_gauntlets(
+    public fun armor_mint_rare_boots(
         style: String,              
         mut payment: Coin<sui_warlords::time::TIME>,
         mut payment2: Coin<sui_warlords::rare::RARE>,        
@@ -438,9 +438,9 @@ module sui_warlords::armorgauntlets {
         
         // Random number between 0 & 256 to derive stat bonus
         let tempbonus = rand::rng(TEMPBONUSMIN, TEMPBONUSMAX, ctx);
-        let armorstatbonus = sui_warlords::armorgauntlets::armor_random_bonus(tempbonus);
+        let armorstatbonus = sui_warlords::armorboots::armor_random_bonus(tempbonus);
 
-        let mut armor = SuiWarlordArmorGauntlets {
+        let mut armor = SuiWarlordArmorBoots {
             id: object::new(ctx),
             style: style,
             gradestring: utf8(b"Rare"),   
@@ -525,9 +525,9 @@ module sui_warlords::armorgauntlets {
     const ARMOR_LEGENDARY_COST: u64 = 8;
     const ARMOR_LEGENDARY_GRADE: u64 = 4;
 
-    // Create a new Sui Warlords Legendary Gauntlets Armor NFT. Style, TIME payment, and LEGENDARY payment are required fields
+    // Create a new Sui Warlords Legendary Boots Armor NFT. Style, TIME payment, and LEGENDARY payment are required fields
     // URL will be managed by a display object   
-    public fun armor_mint_legendary_gauntlets(
+    public fun armor_mint_legendary_boots(
         style: String,              
         mut payment: Coin<sui_warlords::time::TIME>,
         mut payment2: Coin<sui_warlords::legendary::LEGENDARY>,        
@@ -551,9 +551,9 @@ module sui_warlords::armorgauntlets {
         
         // Random number between 0 & 256 to derive stat bonus
         let tempbonus = rand::rng(TEMPBONUSMIN, TEMPBONUSMAX, ctx);
-        let armorstatbonus = sui_warlords::armorgauntlets::armor_random_bonus(tempbonus);
+        let armorstatbonus = sui_warlords::armorboots::armor_random_bonus(tempbonus);
 
-        let mut armor = SuiWarlordArmorGauntlets {
+        let mut armor = SuiWarlordArmorBoots {
             id: object::new(ctx),
             style: style,
             gradestring: utf8(b"Legendary"),   
@@ -638,9 +638,9 @@ module sui_warlords::armorgauntlets {
     const ARMOR_MYTHIC_COST: u64 = 10;
     const ARMOR_MYTHIC_GRADE: u64 = 5;
 
-    // Create a new Sui Warlords MYTHIC Gauntlets Armor NFT. Style, TIME payment, and MYTHIC payment are required fields
+    // Create a new Sui Warlords MYTHIC Boots Armor NFT. Style, TIME payment, and MYTHIC payment are required fields
     // URL will be managed by a display object   
-    public fun armor_mint_mythic_gauntlets(
+    public fun armor_mint_mythic_boots(
         style: String,          
         mut payment: Coin<sui_warlords::time::TIME>,
         mut payment2: Coin<sui_warlords::mythic::MYTHIC>,        
@@ -664,9 +664,9 @@ module sui_warlords::armorgauntlets {
         
         // Random number between 0 & 256 to derive stat bonus
         let tempbonus = rand::rng(TEMPBONUSMIN, TEMPBONUSMAX, ctx);
-        let armorstatbonus = sui_warlords::armorgauntlets::armor_random_bonus(tempbonus);
+        let armorstatbonus = sui_warlords::armorboots::armor_random_bonus(tempbonus);
 
-        let mut armor = SuiWarlordArmorGauntlets {
+        let mut armor = SuiWarlordArmorBoots {
             id: object::new(ctx),
             style: style,
             gradestring: utf8(b"Mythic"),  
@@ -793,8 +793,8 @@ module sui_warlords::armorgauntlets {
     }
 
 
-    // Transfer Helm Armor to recipient
-     public fun gauntlets_armor_transfer(armor: SuiWarlordArmorGauntlets, recipient: address) {
+    // Transfer Chest Armor to recipient
+     public fun boots_armor_transfer(armor: SuiWarlordArmorBoots, recipient: address) {
         transfer::public_transfer(armor, recipient)
     }
 
@@ -807,9 +807,9 @@ module sui_warlords::armorgauntlets {
     const E_ARMOR_CANNOT_BE_FURTHER_ENHANCED: u64 = 9;
     const E_ARMOR_WRONG_GRADE: u64 = 10;
 
-    // Enhance common gauntlets armor function. Chance to burn item scales with enhancement level.    
-    public fun gauntlets_armor_enhance_common(
-        armor: SuiWarlordArmorGauntlets,
+    // Enhance common boots armor function. Chance to burn item scales with enhancement level.    
+    public fun boots_armor_enhance_common(
+        armor: SuiWarlordArmorBoots,
         accobj: &mut Account,
         mut payment: Coin<sui_warlords::time::TIME>,
         mut payment2: Coin<sui_warlords::common::COMMON>,               
@@ -843,11 +843,11 @@ module sui_warlords::armorgauntlets {
         let random = rand::rng(ENHANCEMENT_RNG_MIN, ENHANCEMENT_RNG_MAX, ctx);
         let chancetoburn = armor.enhancements * 5;
         if (random <= chancetoburn) {
-            gauntlets_armor_burn(armor, accobj, ctx);
+            boots_armor_burn(armor, accobj, ctx);
         }
         else {
             let mut armor2 = armor;
-            gauntlets_armor_enhance(&mut armor2);
+            boots_armor_enhance(&mut armor2);
 
             // Emit event for enhancement changes
             event::emit(SuiWarlordArmorEnhancementEvent {
@@ -872,9 +872,9 @@ module sui_warlords::armorgauntlets {
     const ENHANCEMENT_UNCOMMON_TIME_COST: u64 = 2;
     const ENHANCEMENT_UNCOMMON_COST: u64 = 2;     
 
-    // Enhance uncommon gauntlets armor function. Chance to burn item scales with enhancement level.    
-    public fun gauntlets_armor_enhance_uncommon(
-        armor: SuiWarlordArmorGauntlets,
+    // Enhance uncommon boots armor function. Chance to burn item scales with enhancement level.    
+    public fun boots_armor_enhance_uncommon(
+        armor: SuiWarlordArmorBoots,
         accobj: &mut Account,
         mut payment: Coin<sui_warlords::time::TIME>,
         mut payment2: Coin<sui_warlords::uncommon::UNCOMMON>,               
@@ -908,11 +908,11 @@ module sui_warlords::armorgauntlets {
         let random = rand::rng(ENHANCEMENT_RNG_MIN, ENHANCEMENT_RNG_MAX, ctx);
         let chancetoburn = armor.enhancements * 5;
         if (random <= chancetoburn) {
-            gauntlets_armor_burn(armor, accobj, ctx);
+            boots_armor_burn(armor, accobj, ctx);
         }
         else {
             let mut armor2 = armor;
-            gauntlets_armor_enhance(&mut armor2);
+            boots_armor_enhance(&mut armor2);
 
             // Emit event for enhancement changes
             event::emit(SuiWarlordArmorEnhancementEvent {
@@ -937,9 +937,9 @@ module sui_warlords::armorgauntlets {
     const ENHANCEMENT_RARE_TIME_COST: u64 = 2;
     const ENHANCEMENT_RARE_COST: u64 = 2;     
 
-    // Enhance rare gauntlets armor function. Chance to burn item scales with enhancement level.    
-    public fun gauntlets_armor_enhance_rare(
-        armor: SuiWarlordArmorGauntlets,
+    // Enhance rare boots armor function. Chance to burn item scales with enhancement level.    
+    public fun boots_armor_enhance_rare(
+        armor: SuiWarlordArmorBoots,
         accobj: &mut Account,
         mut payment: Coin<sui_warlords::time::TIME>,
         mut payment2: Coin<sui_warlords::rare::RARE>,               
@@ -973,11 +973,11 @@ module sui_warlords::armorgauntlets {
         let random = rand::rng(ENHANCEMENT_RNG_MIN, ENHANCEMENT_RNG_MAX, ctx);
         let chancetoburn = armor.enhancements * 5;
         if (random <= chancetoburn) {
-            gauntlets_armor_burn(armor, accobj, ctx);
+            boots_armor_burn(armor, accobj, ctx);
         }
         else {
             let mut armor2 = armor;
-            gauntlets_armor_enhance(&mut armor2);
+            boots_armor_enhance(&mut armor2);
 
             // Emit event for enhancement changes
             event::emit(SuiWarlordArmorEnhancementEvent {
@@ -1002,9 +1002,9 @@ module sui_warlords::armorgauntlets {
     const ENHANCEMENT_LEGENDARY_TIME_COST: u64 = 2;
     const ENHANCEMENT_LEGENDARY_COST: u64 = 2;     
 
-    // Enhance legendary gauntlets armor function. Chance to burn item scales with enhancement level.    
-    public fun gauntlets_armor_enhance_legendary(
-        armor: SuiWarlordArmorGauntlets,
+    // Enhance legendary boots armor function. Chance to burn item scales with enhancement level.    
+    public fun boots_armor_enhance_legendary(
+        armor: SuiWarlordArmorBoots,
         accobj: &mut Account,
         mut payment: Coin<sui_warlords::time::TIME>,
         mut payment2: Coin<sui_warlords::legendary::LEGENDARY>,               
@@ -1038,11 +1038,11 @@ module sui_warlords::armorgauntlets {
         let random = rand::rng(ENHANCEMENT_RNG_MIN, ENHANCEMENT_RNG_MAX, ctx);
         let chancetoburn = armor.enhancements * 5;
         if (random <= chancetoburn) {
-            gauntlets_armor_burn(armor, accobj, ctx);
+            boots_armor_burn(armor, accobj, ctx);
         }
         else {
             let mut armor2 = armor;
-            gauntlets_armor_enhance(&mut armor2);
+            boots_armor_enhance(&mut armor2);
 
             // Emit event for enhancement changes
             event::emit(SuiWarlordArmorEnhancementEvent {
@@ -1067,9 +1067,9 @@ module sui_warlords::armorgauntlets {
     const ENHANCEMENT_MYTHIC_TIME_COST: u64 = 2;
     const ENHANCEMENT_MYTHIC_COST: u64 = 2;     
 
-    // Enhance mythic gauntlets armor function. Chance to burn item scales with enhancement level.    
-    public fun gauntlets_armor_enhance_mythic(
-        armor: SuiWarlordArmorGauntlets,
+    // Enhance mythic boots armor function. Chance to burn item scales with enhancement level.    
+    public fun boots_armor_enhance_mythic(
+        armor: SuiWarlordArmorBoots,
         accobj: &mut Account,
         mut payment: Coin<sui_warlords::time::TIME>,
         mut payment2: Coin<sui_warlords::mythic::MYTHIC>,               
@@ -1103,11 +1103,11 @@ module sui_warlords::armorgauntlets {
         let random = rand::rng(ENHANCEMENT_RNG_MIN, ENHANCEMENT_RNG_MAX, ctx);
         let chancetoburn = armor.enhancements * 5;
         if (random <= chancetoburn) {
-            gauntlets_armor_burn(armor, accobj, ctx);
+            boots_armor_burn(armor, accobj, ctx);
         }
         else {
             let mut armor2 = armor;
-            gauntlets_armor_enhance(&mut armor2);
+            boots_armor_enhance(&mut armor2);
 
             // Emit event for enhancement changes
             event::emit(SuiWarlordArmorEnhancementEvent {
@@ -1134,7 +1134,7 @@ module sui_warlords::armorgauntlets {
     // Otherwise base stats of 4 or less can never progress due to enhancement
     const ENHANCEMENT_MULTIPLIER: u64 = 5;
 
-    fun gauntlets_armor_enhance(armor: &mut SuiWarlordArmorGauntlets) {
+    fun boots_armor_enhance(armor: &mut SuiWarlordArmorBoots) {
             armor.enhancements = armor.enhancements + 1; 
             armor.strength = armor.strength + 1 + (armor.strength / ENHANCEMENT_MULTIPLIER);
             armor.endurance = armor.endurance + 1 + (armor.endurance / ENHANCEMENT_MULTIPLIER);
@@ -1151,7 +1151,7 @@ module sui_warlords::armorgauntlets {
     // By not adding scaling based on existing enhancements, infinite creation of common objects should be restrictive.
     // Even if theoretically possible, items are weak enough to not matter much. Will drive engagement and game transactions.
     // And may ultimately end in a meta of its own.
-    public fun gauntlets_armor_burn(armor: SuiWarlordArmorGauntlets, accobj: &mut Account, ctx: &mut TxContext) {
+    public fun boots_armor_burn(armor: SuiWarlordArmorBoots, accobj: &mut Account, ctx: &mut TxContext) {
         
         let amount = armor.bonus / 2;
         let recipient = tx_context::sender(ctx);
@@ -1177,7 +1177,7 @@ module sui_warlords::armorgauntlets {
             transfer::public_transfer(essencepayout, recipient);
         };
 
-        let SuiWarlordArmorGauntlets {id, style: _, gradestring: _, grade: _, bonus: _, enhancements: _, armorlevelphysical: _, armorlevelmagical: _, strength: _, endurance: _, dexterity: _, agility: _, intelligence: _, wisdom: _, vitality: _, luck: _} = armor;
+        let SuiWarlordArmorBoots {id, style: _, gradestring: _, grade: _, bonus: _, enhancements: _, armorlevelphysical: _, armorlevelmagical: _, strength: _, endurance: _, dexterity: _, agility: _, intelligence: _, wisdom: _, vitality: _, luck: _} = armor;
         object::delete(id);                              
     }   
 }
