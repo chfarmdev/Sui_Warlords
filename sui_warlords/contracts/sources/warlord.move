@@ -652,8 +652,7 @@ module sui_warlords::warlord {
     // Create a new Sui Warlords NFT. Name, description, URL, and SUI payment are required arguments
     // Must add logic for fixed URL once art is generated and layered in IPFS
     public fun warlord_mint(
-        name: vector<u8>,
-        description: vector<u8>,        
+        name: vector<u8>,                
         mut payment: Coin<SUI>,
         clock: &Clock,
         ctx: &mut TxContext,
@@ -674,7 +673,7 @@ module sui_warlords::warlord {
         let warlord = SuiWarlordNFT {
             id: object::new(ctx),
             name: string::utf8(name),
-            description: string::utf8(description),
+            description: string::utf8(name),
             class: string::utf8(b"Recruit"),
             level: INITIAL_LEVEL,            
             createtime: sui::clock::timestamp_ms(clock),
@@ -788,90 +787,21 @@ module sui_warlords::warlord {
 
     // ===== Level Up Functions ===== 
 
-    // Level up section, costs 2 SUI, and 1 BLOOD 
+    // Level up section, costs 4 TIME, and 1 BLOOD 
     // Up to 8 additional BLOOD depending on desired bonus stats 
     // Allows up to 9 level ups for a max level of 10
 
     const BASECLASS_LVLUP_MIN: u8 = 0;
     const BASECLASS_LVLUP_MAX: u8 = 8;
-    const BASECLASS_LEVEL_UP_COST_SUI: u64 = 2000000000;
+    
+    const BASECLASS_LEVEL_UP_COST_TIME: u64 = 4;
     const BASECLASS_LEVEL_UP_COST_BLOOD: u64 = 1;
     const MAX_BASECLASS_BLOODBONUS: u64 = 8;
     
     const E_WARLORD_IS_MAX_LEVEL_TEN: u64 = 2;
-    const E_TOO_MUCH_BLOOD_FOR_LEVEL_UP: u64 = 3;    
-    
-    public fun warlord_base_levelup_sui(
-        warlord: &mut SuiWarlordNFT,
-        mut payment: Coin<SUI>,
-        mut payment2: Coin<sui_warlords::blood::BLOOD>,
-        mut blood_quantity: u64,
-        ctx: &mut TxContext,
-        ) {
-        let sender = tx_context::sender(ctx);
-        let value = coin::value(&payment);
-        let value2 = coin::value(&payment2);
+    const E_TOO_MUCH_BLOOD_FOR_LEVEL_UP: u64 = 3;       
         
-        //Check users balance and throw error if not enough SUI or BLOOD
-        assert!(value >= BASECLASS_LEVEL_UP_COST_SUI, E_INSUFFICIENT_PAYMENT);
-        assert!(value2 >= BASECLASS_LEVEL_UP_COST_BLOOD, E_INSUFFICIENT_PAYMENT);
-        
-        // Split and send the mint cost to admin address        
-        pay::split_and_transfer(&mut payment, BASECLASS_LEVEL_UP_COST_SUI, ADMIN_PAYOUT_ADDRESS, ctx);
-        
-        // Transfer the SUI remainder back to the user/sender
-        transfer::public_transfer(payment, sender);
-        
-        // Check BLOOD sent, if over 9, set to 9 which is max
-        if (blood_quantity >= 9) {
-            blood_quantity = 9;        
-        };
-        
-        // Transfer BLOOD to admin, and return remainder to sender
-        pay::split_and_transfer(&mut payment2, blood_quantity, ADMIN_PAYOUT_ADDRESS, ctx);
-        transfer::public_transfer(payment2, sender);
-        
-        // Calculate the bloodbonus based on blood_quantity. Capped at max roll per level up. Which is 8 for recruit
-        let bloodbonus: u64 = (blood_quantity - BASECLASS_LEVEL_UP_COST_BLOOD) / BASECLASS_LEVEL_UP_COST_BLOOD;
-        if (bloodbonus > MAX_BASECLASS_BLOODBONUS) {
-            abort E_TOO_MUCH_BLOOD_FOR_LEVEL_UP
-        };
-
-        // Abort if warlord is level 10 or above, otherwise allow level up
-        if (warlord.level >= 10) {
-            abort E_WARLORD_IS_MAX_LEVEL_TEN
-        }
-        else {     
-            // Increment level then increase stats. Existing + bloodbonus (Max of 8) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + bloodbonus + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + bloodbonus + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
-
-            event::emit(SuiWarlordLevelEvent {
-            object_id: object::id(warlord),            
-            name: warlord.name,                      
-            strength: warlord.strength,
-            endurance: warlord.endurance,
-            dexterity: warlord.dexterity,
-            agility: warlord.agility,
-            intelligence: warlord.intelligence,
-            wisdom: warlord.wisdom,
-            vitality: warlord.vitality,
-            luck: warlord.luck,
-            });            
-        }
-    }
-
-    // Level up section, costs 4 TIME, and 1-9 BLOOD depending on desired bonus stats. Allows up to 9 level ups for a max level of 10.
-    const BASECLASS_LEVEL_UP_COST_TIME: u64 = 4;
-        
-    public fun warlord_base_levelup_time(
+    public fun warlord_base_levelup(
         warlord: &mut SuiWarlordNFT,
         mut payment: Coin<sui_warlords::time::TIME>,
         mut payment2: Coin<sui_warlords::blood::BLOOD>,
@@ -941,149 +871,19 @@ module sui_warlords::warlord {
 
     const ADVANCED_LVLUP_MIN: u8 = 0;
     const ADVANCED_LVLUP_MAX: u8 = 16;
-    const ADVANCED_LEVEL_UP_COST_SUI: u64 = 4000000000;
+    const ADVANCED_LEVEL_UP_COST_TIME: u64 = 8;
     const ADVANCED_LEVEL_UP_COST_BLOOD: u64 = 2;
     const MAX_ADVANCED_BLOODBONUS: u64 = 10;
     const ADVANCED_ATTRIBUTE_BONUS: u64 = 16;
 
     const E_WARLORD_IS_MAX_LEVEL_TWENTY: u64 = 6;
     const E_WARLORD_IS_MAX_LEVEL_THIRTY: u64 = 7;
-    const E_WARLORD_IS_TOO_LOW_LEVEL: u64 = 8;
-
-    // Advanced Level up section, costs 4 SUI, and 2 BLOOD 
-    // Up to 10 additional BLOOD depending on desired bonus stats 
-    // Allows up to 10 additional level ups for a max level of 20    
-    public fun warlord_advanced_levelup_sui(
-        warlord: &mut SuiWarlordNFT,
-        mut payment: Coin<SUI>,
-        mut payment2: Coin<sui_warlords::blood::BLOOD>,
-        mut blood_quantity: u64,
-        ctx: &mut TxContext,
-        ) {
-        let sender = tx_context::sender(ctx);
-        let value = coin::value(&payment);
-        let value2 = coin::value(&payment2);
-        
-        //Check users balance and throw error if not enough SUI or BLOOD
-        assert!(value >= ADVANCED_LEVEL_UP_COST_SUI, E_INSUFFICIENT_PAYMENT);
-        assert!(value2 >= ADVANCED_LEVEL_UP_COST_BLOOD, E_INSUFFICIENT_PAYMENT);
-        
-        // Split and send the mint cost to admin address        
-        pay::split_and_transfer(&mut payment, ADVANCED_LEVEL_UP_COST_SUI, ADMIN_PAYOUT_ADDRESS, ctx);
-        
-        // Transfer the SUI remainder back to the user/sender
-        transfer::public_transfer(payment, sender);
-        
-        // Check BLOOD sent, if over 12, set to 12 which is max.
-        if (blood_quantity >= 12) {
-            blood_quantity = 12;        
-        };
-        
-        // Transfer BLOOD to admin, and return remainder to sender
-        pay::split_and_transfer(&mut payment2, blood_quantity, ADMIN_PAYOUT_ADDRESS, ctx);
-        transfer::public_transfer(payment2, sender);
-        
-        // Calculate the bloodbonus based on blood_quantity. Capped at 12 for advanced level up
-        let bloodbonus: u64 = (blood_quantity - ADVANCED_LEVEL_UP_COST_BLOOD);
-        if (bloodbonus > MAX_ADVANCED_BLOODBONUS) {
-            abort E_TOO_MUCH_BLOOD_FOR_LEVEL_UP
-        };
-
-        // Abort if warlord is under level 10, otherwise allow level up
-        if (warlord.level < 10) {
-            abort E_WARLORD_IS_TOO_LOW_LEVEL
-        };
-
-        // Abort if warlord is level 20 or above, otherwise allow level up
-        if (warlord.level >= 20) {
-            abort E_WARLORD_IS_MAX_LEVEL_TWENTY
-        };
-
-        if (warlord.class == string::utf8(b"Knight")) {     
-            // Increment level then increase stats. Existing + advanced attribute bonus (16) + bloodbonus (Max of 10) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + ADVANCED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + ADVANCED_ATTRIBUTE_BONUS + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"Warrior")) {     
-            // Increment level then increase stats. Existing + advanced attribute bonus (16) + bloodbonus (Max of 10) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + ADVANCED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + ADVANCED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"Scout")) {     
-            // Increment level then increase stats. Existing + advanced attribute bonus (16) + bloodbonus (Max of 10) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + ADVANCED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + ADVANCED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"Wizard")) {     
-            // Increment level then increase stats. Existing + advanced attribute bonus (16) + bloodbonus (Max of 10) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + ADVANCED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + ADVANCED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"Priest")) {     
-            // Increment level then increase stats. Existing + advanced attribute bonus (16) + bloodbonus (Max of 10) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + ADVANCED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + ADVANCED_ATTRIBUTE_BONUS + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));            
-        };
-
-        event::emit(SuiWarlordLevelEvent {
-            object_id: object::id(warlord),            
-            name: warlord.name,                      
-            strength: warlord.strength,
-            endurance: warlord.endurance,
-            dexterity: warlord.dexterity,
-            agility: warlord.agility,
-            intelligence: warlord.intelligence,
-            wisdom: warlord.wisdom,
-            vitality: warlord.vitality,
-            luck: warlord.luck,
-        });
-    }
-
-    const ADVANCED_LEVEL_UP_COST_TIME: u64 = 8;
+    const E_WARLORD_IS_TOO_LOW_LEVEL: u64 = 8;  
 
     // Advanced Level up section, costs 8 TIME, and 2 BLOOD 
     // Up to 10 additional BLOOD depending on desired bonus stats 
     // Allows up to 10 additional level ups for a max level of 20    
-    public fun warlord_advanced_levelup_time(
+    public fun warlord_advanced_levelup(
         warlord: &mut SuiWarlordNFT,
         mut payment: Coin<sui_warlords::time::TIME>,
         mut payment2: Coin<sui_warlords::blood::BLOOD>,
@@ -1211,285 +1011,15 @@ module sui_warlords::warlord {
 
     const SPECIALIZED_LVLUP_MIN: u8 = 0;
     const SPECIALIZED_LVLUP_MAX: u8 = 32;
-    const SPECIALIZED_LEVEL_UP_COST_SUI: u64 = 6000000000;
+     const SPECIALIZED_LEVEL_UP_COST_TIME: u64 = 12;
     const SPECIALIZED_LEVEL_UP_COST_BLOOD: u64 = 3;
     const MAX_SPECIALIZED_BLOODBONUS: u64 = 12;
-    const SPECIALIZED_ATTRIBUTE_BONUS: u64 = 24;
-
-    // Specialized Level up section, costs 6 SUI, and 3 BLOOD 
-    // Up to 12 additional BLOOD depending on desired bonus stats 
-    // Allows up to 10 additional level ups for a max level of 30    
-    public fun warlord_specialized_levelup_sui(
-        warlord: &mut SuiWarlordNFT,
-        mut payment: Coin<SUI>,
-        mut payment2: Coin<sui_warlords::blood::BLOOD>,
-        mut blood_quantity: u64,
-        ctx: &mut TxContext,
-        ) {
-        let sender = tx_context::sender(ctx);
-        let value = coin::value(&payment);
-        let value2 = coin::value(&payment2);
-        
-        //Check users balance and throw error if not enough SUI or BLOOD
-        assert!(value >= SPECIALIZED_LEVEL_UP_COST_SUI, E_INSUFFICIENT_PAYMENT);
-        assert!(value2 >= SPECIALIZED_LEVEL_UP_COST_BLOOD, E_INSUFFICIENT_PAYMENT);
-        
-        // Split and send the mint cost to admin address        
-        pay::split_and_transfer(&mut payment, SPECIALIZED_LEVEL_UP_COST_SUI, ADMIN_PAYOUT_ADDRESS, ctx);
-        
-        // Transfer the SUI remainder back to the user/sender
-        transfer::public_transfer(payment, sender);
-        
-        // Check BLOOD sent, if over 15, set to 15 which is max.
-        if (blood_quantity >= 15) {
-            blood_quantity = 15;        
-        };
-        
-        // Transfer BLOOD to admin, and return remainder to sender
-        pay::split_and_transfer(&mut payment2, blood_quantity, ADMIN_PAYOUT_ADDRESS, ctx);
-        transfer::public_transfer(payment2, sender);
-        
-        // Calculate the bloodbonus based on blood_quantity. Capped at 15 for specialized level up
-        let bloodbonus: u64 = (blood_quantity - SPECIALIZED_LEVEL_UP_COST_BLOOD);
-        if (bloodbonus > MAX_SPECIALIZED_BLOODBONUS) {
-            abort E_TOO_MUCH_BLOOD_FOR_LEVEL_UP
-        };
-
-        // Abort if warlord is under level 20, otherwise allow level up
-        if (warlord.level < 20) {
-            abort E_WARLORD_IS_TOO_LOW_LEVEL
-        };
-
-        // Abort if warlord is level 30 or above, otherwise allow level up
-        if (warlord.level >= 30) {
-            abort E_WARLORD_IS_MAX_LEVEL_THIRTY
-        };
-
-        // Tank specialized classes END & VIT
-
-        if (warlord.class == string::utf8(b"Paladin")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + SPECIALIZED_ATTRIBUTE_BONUS + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"Warlord")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + SPECIALIZED_ATTRIBUTE_BONUS + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"General")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + SPECIALIZED_ATTRIBUTE_BONUS + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        // Melee DPS specialized classes STR & DEX
-
-        if (warlord.class == string::utf8(b"Monk")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"Berserker")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"Samurai")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        // Nimble specialized classes AGI & DEX
-
-        if (warlord.class == string::utf8(b"Ninja")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"Ranger")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + bloodbonus +  (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"Dragoon")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        // Magic DPS specialized classes INT & WIS
-
-        if (warlord.class == string::utf8(b"Sorcerer")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"Warlock")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"Pyromancer")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        // Magic Support specialized classes WIS & INT
-
-        if (warlord.class == string::utf8(b"Cleric")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"Druid")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"Geomancer")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        event::emit(SuiWarlordLevelEvent {
-            object_id: object::id(warlord),            
-            name: warlord.name,                      
-            strength: warlord.strength,
-            endurance: warlord.endurance,
-            dexterity: warlord.dexterity,
-            agility: warlord.agility,
-            intelligence: warlord.intelligence,
-            wisdom: warlord.wisdom,
-            vitality: warlord.vitality,
-            luck: warlord.luck,            
-        });
-    }
-
-    const SPECIALIZED_LEVEL_UP_COST_TIME: u64 = 12;
+    const SPECIALIZED_ATTRIBUTE_BONUS: u64 = 24;  
 
     // Specialized Level up section, costs 12 TIME, and 3 BLOOD 
     // Up to 12 additional BLOOD depending on desired bonus stats 
     // Allows up to 10 additional level ups for a max level of 30    
-    public fun warlord_specialized_levelup_time(
+    public fun warlord_specialized_levelup(
         warlord: &mut SuiWarlordNFT,
         mut payment: Coin<sui_warlords::time::TIME>,
         mut payment2: Coin<sui_warlords::blood::BLOOD>,
@@ -1756,91 +1286,11 @@ module sui_warlords::warlord {
 
     // ===== Soul Gem Level Up Functions  ===== 
 
-    // Level up section, costs 2 SUI, and 1 BLOOD, and a Soul Gem 
+    // Level up section, costs 4 SUI, and 1 BLOOD, and a Soul Gem 
     // Up to 8 additional BLOOD depending on desired bonus stats 
-    // Allows up to 9 level ups for a max level of 10    
-    
-    public fun warlord_base_levelup_sui_gem(
-        warlord: &mut SuiWarlordNFT,
-        mut payment: Coin<SUI>,
-        mut payment2: Coin<sui_warlords::blood::BLOOD>,
-        mut blood_quantity: u64,
-        gem: SoulGem,
-        ctx: &mut TxContext,
-        ) {
-        let sender = tx_context::sender(ctx);
-        let value = coin::value(&payment);
-        let value2 = coin::value(&payment2);
-        
-        //Check users balance and throw error if not enough SUI or BLOOD
-        assert!(value >= BASECLASS_LEVEL_UP_COST_SUI, E_INSUFFICIENT_PAYMENT);
-        assert!(value2 >= BASECLASS_LEVEL_UP_COST_BLOOD, E_INSUFFICIENT_PAYMENT);
-        
-        // Split and send the mint cost to admin address        
-        pay::split_and_transfer(&mut payment, BASECLASS_LEVEL_UP_COST_SUI, ADMIN_PAYOUT_ADDRESS, ctx);
-        
-        // Transfer the SUI remainder back to the user/sender
-        transfer::public_transfer(payment, sender);
-        
-        // Check BLOOD sent, if over 9, set to 9 which is max
-        if (blood_quantity >= 9) {
-            blood_quantity = 9;        
-        };
-        
-        // Transfer BLOOD to admin, and return remainder to sender
-        pay::split_and_transfer(&mut payment2, blood_quantity, ADMIN_PAYOUT_ADDRESS, ctx);
-        transfer::public_transfer(payment2, sender);
+    // Allows up to 9 level ups for a max level of 10
 
-        // Calculate and set bonus from Soul Gem
-        let mut gembonus = gem.statbonus;
-        // Check gem bonus, if over player level, set to level plus 1
-        if (gembonus > warlord.level) {
-            gembonus = warlord.level + 1;        
-        };
-        // Burn Soul Gem object
-        let SoulGem {id, statbonus: _} = gem;
-        object::delete(id);
-        
-        // Calculate the bloodbonus based on blood_quantity. Capped at max roll per level up. Which is 8 for recruit
-        let bloodbonus: u64 = (blood_quantity - BASECLASS_LEVEL_UP_COST_BLOOD) / BASECLASS_LEVEL_UP_COST_BLOOD;
-        if (bloodbonus > MAX_BASECLASS_BLOODBONUS) {
-            abort E_TOO_MUCH_BLOOD_FOR_LEVEL_UP
-        };
-
-        // Abort if warlord is level 10 or above, otherwise allow level up
-        if (warlord.level >= 10) {
-            abort E_WARLORD_IS_MAX_LEVEL_TEN
-        }
-        else {     
-            // Increment level then increase stats. Existing + bloodbonus (Max of 8) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + gembonus + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + gembonus + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + bloodbonus + gembonus + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + gembonus + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + bloodbonus + gembonus + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + gembonus + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + gembonus + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + gembonus + (rand::rng(BASECLASS_LVLUP_MIN, BASECLASS_LVLUP_MAX, ctx));
-
-            event::emit(SuiWarlordLevelEvent {
-            object_id: object::id(warlord),            
-            name: warlord.name,                      
-            strength: warlord.strength,
-            endurance: warlord.endurance,
-            dexterity: warlord.dexterity,
-            agility: warlord.agility,
-            intelligence: warlord.intelligence,
-            wisdom: warlord.wisdom,
-            vitality: warlord.vitality,
-            luck: warlord.luck,
-            });            
-        }
-    }
-
-    // Level up section, costs 4 TIME, and 1-9 BLOOD depending on desired bonus stats. Allows up to 9 level ups for a max level of 10.
-            
-    public fun warlord_base_levelup_time_gem(
+    public fun warlord_base_levelup_gem(
         warlord: &mut SuiWarlordNFT,
         mut payment: Coin<sui_warlords::time::TIME>,
         mut payment2: Coin<sui_warlords::blood::BLOOD>,
@@ -1917,152 +1367,12 @@ module sui_warlords::warlord {
             });
         }
     }
-  
-
-    // Advanced Level up section, costs 4 SUI, and 2 BLOOD 
-    // Up to 10 additional BLOOD depending on desired bonus stats 
-    // Allows up to 10 additional level ups for a max level of 20    
-    public fun warlord_advanced_levelup_sui_gem(
-        warlord: &mut SuiWarlordNFT,
-        mut payment: Coin<SUI>,
-        mut payment2: Coin<sui_warlords::blood::BLOOD>,
-        mut blood_quantity: u64,
-        gem: SoulGem,
-        ctx: &mut TxContext,
-        ) {
-        let sender = tx_context::sender(ctx);
-        let value = coin::value(&payment);
-        let value2 = coin::value(&payment2);
-        
-        //Check users balance and throw error if not enough SUI or BLOOD
-        assert!(value >= ADVANCED_LEVEL_UP_COST_SUI, E_INSUFFICIENT_PAYMENT);
-        assert!(value2 >= ADVANCED_LEVEL_UP_COST_BLOOD, E_INSUFFICIENT_PAYMENT);
-        
-        // Split and send the mint cost to admin address        
-        pay::split_and_transfer(&mut payment, ADVANCED_LEVEL_UP_COST_SUI, ADMIN_PAYOUT_ADDRESS, ctx);
-        
-        // Transfer the SUI remainder back to the user/sender
-        transfer::public_transfer(payment, sender);
-        
-        // Check BLOOD sent, if over 12, set to 12 which is max.
-        if (blood_quantity >= 12) {
-            blood_quantity = 12;        
-        };
-        
-        // Transfer BLOOD to admin, and return remainder to sender
-        pay::split_and_transfer(&mut payment2, blood_quantity, ADMIN_PAYOUT_ADDRESS, ctx);
-        transfer::public_transfer(payment2, sender);
-        
-        // Calculate and set bonus from Soul Gem
-        let mut gembonus = gem.statbonus;
-        // Check gem bonus, if over player level, set to level plus 1
-        if (gembonus > warlord.level) {
-            gembonus = warlord.level + 1;        
-        };
-        // Burn Soul Gem object
-        let SoulGem {id, statbonus: _} = gem;
-        object::delete(id);
-
-        // Calculate the bloodbonus based on blood_quantity. Capped at 12 for advanced level up
-        let bloodbonus: u64 = (blood_quantity - ADVANCED_LEVEL_UP_COST_BLOOD);
-        if (bloodbonus > MAX_ADVANCED_BLOODBONUS) {
-            abort E_TOO_MUCH_BLOOD_FOR_LEVEL_UP
-        };
-
-        // Abort if warlord is under level 10, otherwise allow level up
-        if (warlord.level < 10) {
-            abort E_WARLORD_IS_TOO_LOW_LEVEL
-        };
-
-        // Abort if warlord is level 20 or above, otherwise allow level up
-        if (warlord.level >= 20) {
-            abort E_WARLORD_IS_MAX_LEVEL_TWENTY
-        };
-
-        if (warlord.class == string::utf8(b"Knight")) {     
-            // Increment level then increase stats. Existing + advanced attribute bonus (16) + bloodbonus (Max of 10) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + ADVANCED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + gembonus + ADVANCED_ATTRIBUTE_BONUS + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"Warrior")) {     
-            // Increment level then increase stats. Existing + advanced attribute bonus (16) + bloodbonus (Max of 10) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + ADVANCED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + ADVANCED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"Scout")) {     
-            // Increment level then increase stats. Existing + advanced attribute bonus (16) + bloodbonus (Max of 10) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + ADVANCED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + ADVANCED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"Wizard")) {     
-            // Increment level then increase stats. Existing + advanced attribute bonus (16) + bloodbonus (Max of 10) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + ADVANCED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + ADVANCED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"Priest")) {     
-            // Increment level then increase stats. Existing + advanced attribute bonus (16) + bloodbonus (Max of 10) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + ADVANCED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + ADVANCED_ATTRIBUTE_BONUS + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + gembonus + (rand::rng(ADVANCED_LVLUP_MIN, ADVANCED_LVLUP_MAX, ctx));            
-        };
-
-        event::emit(SuiWarlordLevelEvent {
-            object_id: object::id(warlord),            
-            name: warlord.name,                      
-            strength: warlord.strength,
-            endurance: warlord.endurance,
-            dexterity: warlord.dexterity,
-            agility: warlord.agility,
-            intelligence: warlord.intelligence,
-            wisdom: warlord.wisdom,
-            vitality: warlord.vitality,
-            luck: warlord.luck,
-        });
-    }
 
     
     // Advanced Level up section, costs 8 TIME, and 2 BLOOD 
     // Up to 10 additional BLOOD depending on desired bonus stats 
     // Allows up to 10 additional level ups for a max level of 20    
-    public fun warlord_advanced_levelup_time_gem(
+    public fun warlord_advanced_levelup_gem(
         warlord: &mut SuiWarlordNFT,
         mut payment: Coin<sui_warlords::time::TIME>,
         mut payment2: Coin<sui_warlords::blood::BLOOD>,
@@ -2197,292 +1507,12 @@ module sui_warlords::warlord {
             luck: warlord.luck,            
         });
     }
-
-
-    // Specialized Level up section, costs 6 SUI, and 3 BLOOD 
-    // Up to 12 additional BLOOD depending on desired bonus stats 
-    // Allows up to 10 additional level ups for a max level of 30    
-    public fun warlord_specialized_levelup_sui_gem(
-        warlord: &mut SuiWarlordNFT,
-        mut payment: Coin<SUI>,
-        mut payment2: Coin<sui_warlords::blood::BLOOD>,
-        mut blood_quantity: u64,
-        gem: SoulGem,
-        ctx: &mut TxContext,
-        ) {
-        let sender = tx_context::sender(ctx);
-        let value = coin::value(&payment);
-        let value2 = coin::value(&payment2);
-        
-        //Check users balance and throw error if not enough SUI or BLOOD
-        assert!(value >= SPECIALIZED_LEVEL_UP_COST_SUI, E_INSUFFICIENT_PAYMENT);
-        assert!(value2 >= SPECIALIZED_LEVEL_UP_COST_BLOOD, E_INSUFFICIENT_PAYMENT);
-        
-        // Split and send the mint cost to admin address        
-        pay::split_and_transfer(&mut payment, SPECIALIZED_LEVEL_UP_COST_SUI, ADMIN_PAYOUT_ADDRESS, ctx);
-        
-        // Transfer the SUI remainder back to the user/sender
-        transfer::public_transfer(payment, sender);
-        
-        // Check BLOOD sent, if over 15, set to 15 which is max.
-        if (blood_quantity >= 15) {
-            blood_quantity = 15;        
-        };
-        
-        // Transfer BLOOD to admin, and return remainder to sender
-        pay::split_and_transfer(&mut payment2, blood_quantity, ADMIN_PAYOUT_ADDRESS, ctx);
-        transfer::public_transfer(payment2, sender);
-
-        // Calculate and set bonus from Soul Gem
-        let mut gembonus = gem.statbonus;
-        // Check gem bonus, if over player level, set to level plus 1
-        if (gembonus > warlord.level) {
-            gembonus = warlord.level + 1;        
-        };
-        // Burn Soul Gem object
-        let SoulGem {id, statbonus: _} = gem;
-        object::delete(id);
-        
-        // Calculate the bloodbonus based on blood_quantity. Capped at 15 for specialized level up
-        let bloodbonus: u64 = (blood_quantity - SPECIALIZED_LEVEL_UP_COST_BLOOD);
-        if (bloodbonus > MAX_SPECIALIZED_BLOODBONUS) {
-            abort E_TOO_MUCH_BLOOD_FOR_LEVEL_UP
-        };
-
-        // Abort if warlord is under level 20, otherwise allow level up
-        if (warlord.level < 20) {
-            abort E_WARLORD_IS_TOO_LOW_LEVEL
-        };
-
-        // Abort if warlord is level 30 or above, otherwise allow level up
-        if (warlord.level >= 30) {
-            abort E_WARLORD_IS_MAX_LEVEL_THIRTY
-        };
-
-        // Tank specialized classes END & VIT
-
-        if (warlord.class == string::utf8(b"Paladin")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"Warlord")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"General")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        // Melee DPS specialized classes STR & DEX
-
-        if (warlord.class == string::utf8(b"Monk")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"Berserker")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"Samurai")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        // Nimble specialized classes AGI & DEX
-
-        if (warlord.class == string::utf8(b"Ninja")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"Ranger")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"Dragoon")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        // Magic DPS specialized classes INT & WIS
-
-        if (warlord.class == string::utf8(b"Sorcerer")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"Warlock")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"Pyromancer")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        // Magic Support specialized classes WIS & INT
-
-        if (warlord.class == string::utf8(b"Cleric")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"Druid")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        if (warlord.class == string::utf8(b"Geomancer")) {     
-            // Increment level then increase stats. Existing + specialized attribute bonus (24) + bloodbonus (Max of 12) + RNG
-            warlord.level = warlord.level + 1;
-            warlord.strength = warlord.strength + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.endurance = warlord.endurance + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.dexterity = warlord.dexterity + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.agility = warlord.agility + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.intelligence = warlord.intelligence + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.wisdom = warlord.wisdom + SPECIALIZED_ATTRIBUTE_BONUS + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.vitality = warlord.vitality + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));
-            warlord.luck = warlord.luck + bloodbonus + gembonus + (rand::rng(SPECIALIZED_LVLUP_MIN, SPECIALIZED_LVLUP_MAX, ctx));            
-        };
-
-        event::emit(SuiWarlordLevelEvent {
-            object_id: object::id(warlord),            
-            name: warlord.name,                      
-            strength: warlord.strength,
-            endurance: warlord.endurance,
-            dexterity: warlord.dexterity,
-            agility: warlord.agility,
-            intelligence: warlord.intelligence,
-            wisdom: warlord.wisdom,
-            vitality: warlord.vitality,
-            luck: warlord.luck,            
-        });
-    }
-    
+  
 
     // Specialized Level up section, costs 12 TIME, and 3 BLOOD 
     // Up to 12 additional BLOOD depending on desired bonus stats 
     // Allows up to 10 additional level ups for a max level of 30    
-    public fun warlord_specialized_levelup_time_gem(
+    public fun warlord_specialized_levelup_gem(
         warlord: &mut SuiWarlordNFT,
         mut payment: Coin<sui_warlords::time::TIME>,
         mut payment2: Coin<sui_warlords::blood::BLOOD>,
