@@ -7,7 +7,7 @@ export default function MainHeader() {
     <>
         <header className="flex flex-row bg-gradient-to-b from-neutral-700 to-neutral-400 h-75"> {/* 75 Pixels */}
             <div className="flex basis-1/3">
-            <Image src="/sw.jpg" width={75} height={75} alt="SW"/>
+            <Image src="/sw.jpg" width={75} height={75} alt="Sui Warlords" priority/>
             </div>
 
             <div className="flex basis-1/3">
